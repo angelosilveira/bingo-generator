@@ -27,6 +27,16 @@ router.post('/', async (req, res) => {
   }
 })
 
+// DELETE /api/template — apaga o template salvo, voltando ao padrão do sistema
+router.delete('/', async (req, res) => {
+  try {
+    await db.collection('config').doc('template').delete()
+    res.json({ ok: true, message: 'Template resetado para o padrão.' })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 router.post('/preview', async (req, res) => {
   const { html, premio, data, horario, local, valorCartela, premioQrLink } = req.body
 
@@ -35,8 +45,7 @@ router.post('/preview', async (req, res) => {
     ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')
     : new Date().toLocaleDateString('pt-BR')
 
-  // Gera QR code real se vier URL
-  const premioQrUrl = await gerarQRCode(premioQrLink)
+  const premioQrUrl = await gerarQRCode(premioQrLink || 'https://exemplo.com/premio')
 
   const tabelaHTML = rows.map(row =>
     `<tr>${row.map(cell =>
@@ -45,8 +54,8 @@ router.post('/preview', async (req, res) => {
   ).join('')
 
   const qrBlock = premioQrUrl
-    ? `<img src="${premioQrUrl}" style="width:90px;height:90px;display:block;margin:0 auto 6px;" />`
-    : `<div style="width:90px;height:90px;margin:0 auto 6px;background:#f0f0f0;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;border-radius:6px;"><div style="font-size:10px;color:#999;text-align:center;line-height:1.3;padding:4px;">QR CODE<br>do prêmio</div></div>`
+    ? `<img src="${premioQrUrl}" style="width:90px;height:90px;display:block;margin:0 auto 4px;" />`
+    : `<div style="width:90px;height:90px;margin:0 auto;background:#f0f0f0;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;border-radius:6px;"><div style="font-size:9px;color:#999;text-align:center;line-height:1.4;">QR CODE<br>do prêmio</div></div>`
 
   const substitute = (tmpl) => tmpl
     .replace(/{{NUMERO}}/g, '0001')
@@ -56,9 +65,9 @@ router.post('/preview', async (req, res) => {
     .replace(/{{LOCAL}}/g, local || 'Clube Recreativo Central')
     .replace(/{{VALOR}}/g, valorCartela || 'R$ 10,00')
     .replace(/{{QR_CODE}}/g, qrBlock)
+    .replace(/{{IMAGEM_PREMIO}}/g, qrBlock) // retrocompat
     .replace(/{{TABELA}}/g, tabelaHTML)
 
-  // Prioridade: body html → salvo no Firestore → padrão
   if (html) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     return res.send(substitute(html))
@@ -75,10 +84,11 @@ router.post('/preview', async (req, res) => {
     return res.send(substitute(savedHtml))
   }
 
-  // Fallback: template padrão do sistema
   const fallback = gerarHTMLCartela({
-    numero: 1, rows, premio: premio || 'Smart TV 55" Samsung',
-    premioQrUrl, data, horario, local, valorCartela,
+    numero: 1, rows,
+    premio: premio || 'Smart TV 55" Samsung',
+    premioQrUrl,
+    data, horario, local, valorCartela,
   })
   res.setHeader('Content-Type', 'text/html; charset=utf-8')
   res.send(fallback)
