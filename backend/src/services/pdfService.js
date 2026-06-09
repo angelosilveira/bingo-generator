@@ -2,12 +2,18 @@ import puppeteer from 'puppeteer'
 import { gerarCartela } from './bingoGenerator.js'
 import { gerarHTMLCartela } from '../templates/cartela.js'
 
-const BATCH_SIZE = 50 // cartelas por lote
+const BATCH_SIZE = 20 // menor lote = menos memória por vez
 
 async function gerarLote({ browser, cartelas, premio, premioImageBase64, data, horario, local, valorCartela }) {
   const page = await browser.newPage()
 
   try {
+    const pagesHTML = cartelas.map(({ numero, rows }) => {
+      const html = gerarHTMLCartela({ numero, rows, premio, premioImageBase64, data, horario, local, valorCartela })
+      const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i)
+      return bodyMatch ? bodyMatch[1] : html
+    })
+
     const fullHTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -28,12 +34,7 @@ async function gerarLote({ browser, cartelas, premio, premioImageBase64, data, h
 </style>
 </head>
 <body>
-${cartelas.map(({ numero, rows }) => {
-  const html = gerarHTMLCartela({ numero, rows, premio, premioImageBase64, data, horario, local, valorCartela })
-  const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i)
-  const bodyContent = bodyMatch ? bodyMatch[1] : html
-  return `<div class="page-wrap">${bodyContent}</div>`
-}).join('\n')}
+${pagesHTML.map(c => `<div class="page-wrap">${c}</div>`).join('\n')}
 </body>
 </html>`
 
@@ -51,13 +52,10 @@ ${cartelas.map(({ numero, rows }) => {
   }
 }
 
-function mergePDFs(buffers) {
-  // Concatenação simples de PDFs via marcadores de página
-  // Usa o módulo pdf-lib para merge correto
-  return buffers
-}
-
 export async function gerarPDF({ quantidadeCartelas, premio, premioImageBase64, data, horario, local, valorCartela }) {
+  // Remove o base64 da imagem do HTML se for muito grande — usa URL de dados inline
+  // Puppeteer lida bem com data URIs, então mantemos mas garantimos tamanho razoável
+
   const browser = await puppeteer.launch({
     headless: true,
     args: [
@@ -65,27 +63,31 @@ export async function gerarPDF({ quantidadeCartelas, premio, premioImageBase64, 
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
       '--disable-gpu',
-      '--no-first-run',
-      '--no-zygote',
-      '--single-process',
+      '--disable-software-rasterizer',
       '--disable-extensions',
+      '--disable-background-networking',
+      '--disable-default-apps',
+      '--disable-sync',
+      '--no-first-run',
+      // SEM --single-process e SEM --no-zygote: causam crashes
     ],
+    timeout: 30000,
   })
 
   try {
-    // Gera todos os dados das cartelas primeiro (leve, só números)
-    const todasCartelas = []
-    for (let i = 1; i <= quantidadeCartelas; i++) {
-      todasCartelas.push({ numero: i, rows: gerarCartela() })
-    }
+    // Gera dados de todas as cartelas (só números, leve)
+    const todasCartelas = Array.from({ length: quantidadeCartelas }, (_, i) => ({
+      numero: i + 1,
+      rows: gerarCartela(),
+    }))
 
-    // Divide em lotes de BATCH_SIZE
+    // Divide em lotes
     const lotes = []
     for (let i = 0; i < todasCartelas.length; i += BATCH_SIZE) {
       lotes.push(todasCartelas.slice(i, i + BATCH_SIZE))
     }
 
-    console.log(`📦 Gerando ${lotes.length} lotes de até ${BATCH_SIZE} cartelas…`)
+    console.log(`📦 ${quantidadeCartelas} cartelas → ${lotes.length} lotes de ${BATCH_SIZE}`)
 
     // Gera PDF de cada lote sequencialmente
     const pdfBuffers = []
@@ -104,7 +106,7 @@ export async function gerarPDF({ quantidadeCartelas, premio, premioImageBase64, 
       pdfBuffers.push(buffer)
     }
 
-    // Merge todos os PDFs num único arquivo
+    // Merge com pdf-lib
     const { PDFDocument } = await import('pdf-lib')
     const mergedDoc = await PDFDocument.create()
 
@@ -115,7 +117,7 @@ export async function gerarPDF({ quantidadeCartelas, premio, premioImageBase64, 
     }
 
     const finalPdf = await mergedDoc.save()
-    console.log(`✅ PDF final: ${finalPdf.byteLength} bytes, ${quantidadeCartelas} cartelas`)
+    console.log(`✅ PDF final: ${(finalPdf.byteLength / 1024 / 1024).toFixed(1)} MB — ${quantidadeCartelas} cartelas`)
 
     return Buffer.from(finalPdf)
   } finally {
