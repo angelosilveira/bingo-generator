@@ -4,7 +4,35 @@ import { gerarHTMLCartela } from '../templates/cartela.js'
 
 const BATCH_SIZE = 20
 
-export async function gerarPDF({ quantidadeCartelas, premio, premioImageBase64, data, horario, local, valorCartela }) {
+// Substitui variáveis do template customizado
+function renderTemplate(template, { numero, rows, premio, premioImageBase64, data, horario, local, valorCartela }) {
+  const numFormatado = String(numero).padStart(4, '0')
+  const dataFormatada = data
+    ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')
+    : '__/__/____'
+
+  const tabelaHTML = rows.map(row =>
+    `<tr>${row.map(cell =>
+      `<td class="td">${cell.free ? '🎁' : cell.value}</td>`
+    ).join('')}</tr>`
+  ).join('')
+
+  const imgHtml = premioImageBase64
+    ? `<img class="prize-img" src="${premioImageBase64}" />`
+    : `<div style="font-size:36px;padding:8px 0;text-align:center;">🎁</div>`
+
+  return template
+    .replace(/{{NUMERO}}/g, numFormatado)
+    .replace(/{{PREMIO}}/g, premio || '')
+    .replace(/{{DATA}}/g, dataFormatada)
+    .replace(/{{HORARIO}}/g, horario || '--:--')
+    .replace(/{{LOCAL}}/g, local || '')
+    .replace(/{{VALOR}}/g, valorCartela || '')
+    .replace(/{{IMAGEM_PREMIO}}/g, imgHtml)
+    .replace(/{{TABELA}}/g, tabelaHTML)
+}
+
+export async function gerarPDF({ quantidadeCartelas, premio, premioImageBase64, data, horario, local, valorCartela, customTemplate }) {
   const browser = await puppeteer.launch({
     headless: true,
     args: [
@@ -41,11 +69,14 @@ export async function gerarPDF({ quantidadeCartelas, premio, premioImageBase64, 
       const lote = lotes[li]
       console.log(`  → Lote ${li + 1}/${lotes.length}`)
 
-      // Cada cartela vira uma página individualmente dentro do lote
       for (const { numero, rows } of lote) {
         const page = await browser.newPage()
         try {
-          const html = gerarHTMLCartela({ numero, rows, premio, premioImageBase64, data, horario, local, valorCartela })
+          // Usa template customizado (com variáveis) ou o padrão (com função)
+          const html = customTemplate
+            ? renderTemplate(customTemplate, { numero, rows, premio, premioImageBase64, data, horario, local, valorCartela })
+            : gerarHTMLCartela({ numero, rows, premio, premioImageBase64, data, horario, local, valorCartela })
+
           await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 60000 })
           const pdfBuf = await page.pdf({ format: 'A4', printBackground: true, timeout: 60000 })
 
@@ -59,7 +90,7 @@ export async function gerarPDF({ quantidadeCartelas, premio, premioImageBase64, 
     }
 
     const finalPdf = await mergedDoc.save()
-    console.log(`✅ PDF final: ${(finalPdf.byteLength / 1024 / 1024).toFixed(1)} MB — ${quantidadeCartelas} cartelas`)
+    console.log(`✅ PDF final: ${(finalPdf.byteLength / 1024 / 1024).toFixed(1)} MB`)
     return Buffer.from(finalPdf)
 
   } finally {

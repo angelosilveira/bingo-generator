@@ -1,39 +1,34 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { collection, getDocs, orderBy, query } from 'firebase/firestore'
+import { collection, getDocs, orderBy, query, deleteDoc, doc } from 'firebase/firestore'
 import { db } from '../services/firebase'
-import { useAuth } from '../contexts/AuthContext'
-import { Plus, LogOut, Download, Calendar, MapPin, DollarSign, Ticket } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { Plus, Download, Calendar, MapPin, DollarSign, Ticket, Trash2 } from 'lucide-react'
+import { toast } from 'react-hot-toast'
+import Layout from '../components/Layout'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 export default function DashboardPage() {
   const [bingos, setBingos] = useState([])
   const [loading, setLoading] = useState(true)
-  const { logout } = useAuth()
+  const [deletingId, setDeletingId] = useState(null)
   const navigate = useNavigate()
 
-  useEffect(() => {
-    const fetchBingos = async () => {
-      try {
-        const q = query(collection(db, 'bingos'), orderBy('createdAt', 'desc'))
-        const snap = await getDocs(q)
-        setBingos(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-      } catch {
-        toast.error('Erro ao carregar bingos.')
-      } finally {
-        setLoading(false)
-      }
+  const fetchBingos = async () => {
+    try {
+      const q = query(collection(db, 'bingos'), orderBy('createdAt', 'desc'))
+      const snap = await getDocs(q)
+      setBingos(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    } catch {
+      toast.error('Erro ao carregar bingos.')
+    } finally {
+      setLoading(false)
     }
-    fetchBingos()
-  }, [])
-
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login')
   }
 
+  useEffect(() => { fetchBingos() }, [])
+
   const handleDownload = async (id) => {
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
     toast.loading('Gerando PDF…', { id: 'pdf' })
     try {
       const bingo = bingos.find(b => b.id === id)
@@ -56,41 +51,53 @@ export default function DashboardPage() {
     }
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-[#1a3a6b] shadow-md">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🎱</span>
-            <div>
-              <h1 className="text-white font-black text-xl">Bingo Generator</h1>
-              <p className="text-blue-300 text-xs">Painel Admin</p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => navigate('/novo')}
-              className="flex items-center gap-2 bg-[#f5a623] hover:bg-[#e09510] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-            >
-              <Plus size={16} />
-              Novo Bingo
-            </button>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white text-sm px-3 py-2 rounded-lg transition-colors"
-            >
-              <LogOut size={16} />
-            </button>
-          </div>
-        </div>
-      </header>
+  const handleDelete = async (id) => {
+    if (!confirm('Deletar este bingo? Esta ação não pode ser desfeita.')) return
+    setDeletingId(id)
+    try {
+      await deleteDoc(doc(db, 'bingos', id))
+      setBingos(prev => prev.filter(b => b.id !== id))
+      toast.success('Bingo deletado.')
+    } catch {
+      toast.error('Erro ao deletar.')
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
-      {/* Content */}
-      <main className="max-w-5xl mx-auto px-4 py-8">
+  const statusBadge = (b) => {
+    if (b.status === 'processing') return (
+      <span className="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-medium whitespace-nowrap">
+        Gerando…
+      </span>
+    )
+    if (b.status === 'done') return (
+      <button
+        onClick={() => handleDownload(b.id)}
+        className="flex items-center gap-2 bg-[#1a3a6b] hover:bg-[#0f2347] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+      >
+        <Download size={15} /> PDF
+      </button>
+    )
+    return (
+      <span className="text-xs bg-red-100 text-red-600 px-3 py-1 rounded-full font-medium">Erro</span>
+    )
+  }
+
+  return (
+    <Layout>
+      <main className="flex-1 px-6 py-8 max-w-5xl w-full mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-800">Bingos Gerados</h2>
-          <span className="text-sm text-gray-500">{bingos.length} registros</span>
+          <div>
+            <h1 className="text-2xl font-black text-gray-800">Bingos Gerados</h1>
+            <p className="text-sm text-gray-500 mt-0.5">{bingos.length} registros</p>
+          </div>
+          <button
+            onClick={() => navigate('/novo')}
+            className="flex items-center gap-2 bg-[#f5a623] hover:bg-[#e09510] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors"
+          >
+            <Plus size={16} /> Novo Bingo
+          </button>
         </div>
 
         {loading ? (
@@ -107,16 +114,14 @@ export default function DashboardPage() {
             </button>
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-3">
             {bingos.map((b) => (
               <div key={b.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-5">
-                {/* Prize image */}
-                <div className="w-16 h-16 rounded-lg overflow-hidden bg-blue-50 flex-shrink-0">
-                  {b.premioImageUrl ? (
-                    <img src={b.premioImageUrl} alt={b.premio} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-2xl">🎁</div>
-                  )}
+                {/* Imagem */}
+                <div className="w-14 h-14 rounded-lg overflow-hidden bg-blue-50 flex-shrink-0 flex items-center justify-center text-2xl">
+                  {b.premioImageBase64
+                    ? <img src={b.premioImageBase64} alt={b.premio} className="w-full h-full object-cover" />
+                    : '🎁'}
                 </div>
 
                 {/* Info */}
@@ -124,49 +129,37 @@ export default function DashboardPage() {
                   <h3 className="font-bold text-gray-800 truncate">{b.premio || 'Prêmio'}</h3>
                   <div className="flex flex-wrap gap-3 mt-1.5">
                     <span className="flex items-center gap-1 text-xs text-gray-500">
-                      <Calendar size={12} />
-                      {b.data} {b.horario && `às ${b.horario}`}
+                      <Calendar size={12} />{b.data} {b.horario && `às ${b.horario}`}
                     </span>
                     <span className="flex items-center gap-1 text-xs text-gray-500">
-                      <MapPin size={12} />
-                      {b.local}
+                      <MapPin size={12} />{b.local}
                     </span>
                     <span className="flex items-center gap-1 text-xs text-gray-500">
-                      <DollarSign size={12} />
-                      {b.valorCartela}
+                      <DollarSign size={12} />{b.valorCartela}
                     </span>
                     <span className="flex items-center gap-1 text-xs text-gray-500">
-                      <Ticket size={12} />
-                      {b.quantidadeCartelas} cartelas
+                      <Ticket size={12} />{b.quantidadeCartelas} cartelas
                     </span>
                   </div>
                 </div>
 
-                {/* Status + Download */}
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  {b.status === 'processing' ? (
-                    <span className="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-medium">
-                      Gerando…
-                    </span>
-                  ) : b.status === 'done' ? (
-                    <button
-                      onClick={() => handleDownload(b.id)}
-                      className="flex items-center gap-2 bg-[#1a3a6b] hover:bg-[#0f2347] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-                    >
-                      <Download size={15} />
-                      PDF
-                    </button>
-                  ) : (
-                    <span className="text-xs bg-red-100 text-red-600 px-3 py-1 rounded-full font-medium">
-                      Erro
-                    </span>
-                  )}
+                {/* Ações */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {statusBadge(b)}
+                  <button
+                    onClick={() => handleDelete(b.id)}
+                    disabled={deletingId === b.id}
+                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40"
+                    title="Deletar"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </main>
-    </div>
+    </Layout>
   )
 }

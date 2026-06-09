@@ -5,16 +5,7 @@ import { gerarPDF } from '../services/pdfService.js'
 const router = express.Router()
 
 router.post('/gerar', async (req, res) => {
-  const {
-    bingoId,
-    quantidadeCartelas,
-    premio,
-    premioImageBase64,
-    data,
-    horario,
-    local,
-    valorCartela,
-  } = req.body
+  const { bingoId, quantidadeCartelas, premio, premioImageBase64, data, horario, local, valorCartela } = req.body
 
   if (!bingoId || !quantidadeCartelas) {
     return res.status(400).json({ error: 'bingoId e quantidadeCartelas são obrigatórios.' })
@@ -22,6 +13,18 @@ router.post('/gerar', async (req, res) => {
 
   try {
     console.log(`🎱 Gerando ${quantidadeCartelas} cartelas para bingo ${bingoId}…`)
+
+    // Busca template customizado do Firestore (se existir)
+    let customTemplate = null
+    try {
+      const tmplSnap = await db.collection('config').doc('template').get()
+      if (tmplSnap.exists && tmplSnap.data().html) {
+        customTemplate = tmplSnap.data().html
+        console.log('📄 Usando template customizado do Firestore')
+      }
+    } catch (e) {
+      console.warn('⚠️ Não foi possível carregar template customizado:', e.message)
+    }
 
     const pdfBuffer = await gerarPDF({
       quantidadeCartelas: Number(quantidadeCartelas),
@@ -31,6 +34,7 @@ router.post('/gerar', async (req, res) => {
       horario,
       local,
       valorCartela,
+      customTemplate,
     })
 
     await db.collection('bingos').doc(bingoId).update({
@@ -38,7 +42,7 @@ router.post('/gerar', async (req, res) => {
       pdfGeneratedAt: new Date(),
     })
 
-    console.log(`✅ PDF gerado: ${pdfBuffer.length} bytes`)
+    console.log(`✅ PDF gerado: ${(pdfBuffer.length / 1024 / 1024).toFixed(1)} MB`)
 
     res.set({
       'Content-Type': 'application/pdf',
