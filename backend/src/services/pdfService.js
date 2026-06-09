@@ -21,13 +21,21 @@ function renderTemplate(template, { numero, rows, premio, premioQrUrl, data, hor
     ? `<img src="${premioQrUrl}" style="width:90px;height:90px;display:block;margin:0 auto 6px;" />`
     : `<div style="width:90px;height:90px;margin:0 auto 6px;background:#f0f0f0;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;border-radius:6px;"><div style="font-size:10px;color:#999;text-align:center;line-height:1.3;padding:4px;">QR CODE</div></div>`
 
+
+  function fmtValor(v) {
+    if (!v) return ''
+    if (typeof v === 'string' && v.includes('R$')) return v
+    const n = parseFloat(String(v).replace(',', '.'))
+    if (isNaN(n)) return v
+    return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  }
   return template
     .replace(/{{NUMERO}}/g, numFormatado)
     .replace(/{{PREMIO}}/g, premio || 'A DEFINIR')
     .replace(/{{DATA}}/g, dataFormatada)
     .replace(/{{HORARIO}}/g, horario || '--:--')
     .replace(/{{LOCAL}}/g, local || '')
-    .replace(/{{VALOR}}/g, valorCartela || '')
+    .replace(/{{VALOR}}/g, fmtValor(valorCartela) || '')
     .replace(/{{QR_CODE}}/g, qrBlock)
     .replace(/{{TABELA}}/g, tabelaHTML)
 }

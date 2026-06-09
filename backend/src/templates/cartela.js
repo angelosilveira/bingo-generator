@@ -1,4 +1,13 @@
 export function gerarHTMLCartela({ numero, rows, premio, premioQrUrl, data, horario, local, valorCartela }) {
+  // Garante formato R$ X,XX independente do que vier
+  function fmtValor(v) {
+    if (!v) return ''
+    if (typeof v === 'string' && v.includes('R$')) return v
+    const n = parseFloat(String(v).replace(',', '.'))
+    if (isNaN(n)) return v
+    return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  }
+  const valorFormatado = fmtValor(valorCartela)
   const numFormatado = String(numero).padStart(4, '0')
   const dataFormatada = data
     ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')
@@ -149,7 +158,7 @@ export function gerarHTMLCartela({ numero, rows, premio, premioQrUrl, data, hora
     <div style="font-size:9px;font-weight:900;color:#0D1F3C;letter-spacing:2px;
       text-transform:uppercase;margin-bottom:3px;font-family:Arial,sans-serif;">Valor da Cartela</div>
     <div style="font-family:Impact,'Arial Black',Arial,sans-serif;font-size:32px;
-      font-weight:900;color:#0D1F3C;letter-spacing:1px;line-height:1;">${valorCartela}</div>
+      font-weight:900;color:#0D1F3C;letter-spacing:1px;line-height:1;">${valorFormatado}</div>
   </div>
 </div>
 

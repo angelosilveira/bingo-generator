@@ -5,6 +5,7 @@ import { db } from '../services/firebase'
 import { Upload, Loader2, Link } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import Layout from '../components/Layout'
+import { formatCurrency } from '../utils/currency'
 import BingoCardPreview from '../components/BingoCardPreview'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
@@ -142,8 +143,9 @@ export default function NewBingoPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1">Valor <span className="text-red-500">*</span></label>
-                    <input type="text" value={form.valorCartela} onChange={set('valorCartela')}
-                      placeholder="Ex: R$ 5,00"
+                    <input type="text" value={form.valorCartela}
+                      onChange={e => setForm(f => ({ ...f, valorCartela: formatCurrency(e.target.value) }))}
+                      inputMode="numeric" placeholder="Ex: R$ 5,00"
                       className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]" required />
                   </div>
                   <div>

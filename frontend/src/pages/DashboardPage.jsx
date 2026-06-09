@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { collection, getDocs, orderBy, query, deleteDoc, doc } from 'firebase/firestore'
 import { db } from '../services/firebase'
 import { Plus, Download, Calendar, MapPin, DollarSign, Ticket, Trash2, Pencil } from 'lucide-react'
+import { displayCurrency } from '../utils/currency'
 import { toast } from 'react-hot-toast'
 import Layout from '../components/Layout'
 
@@ -117,7 +118,7 @@ export default function DashboardPage() {
                   <div className="flex flex-wrap gap-3 mt-1.5">
                     <span className="flex items-center gap-1 text-xs text-gray-500"><Calendar size={12} />{b.data} {b.horario && `às ${b.horario}`}</span>
                     <span className="flex items-center gap-1 text-xs text-gray-500"><MapPin size={12} />{b.local}</span>
-                    <span className="flex items-center gap-1 text-xs text-gray-500"><DollarSign size={12} />{b.valorCartela}</span>
+                    <span className="flex items-center gap-1 text-xs text-gray-500"><DollarSign size={12} />{displayCurrency(b.valorCartela)}</span>
                     <span className="flex items-center gap-1 text-xs text-gray-500"><Ticket size={12} />{b.quantidadeCartelas} cartelas</span>
                   </div>
                 </div>

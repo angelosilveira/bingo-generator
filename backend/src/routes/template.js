@@ -149,7 +149,7 @@ router.post('/preview', async (req, res) => {
     .replace(/{{DATA}}/g, dataFormatada)
     .replace(/{{HORARIO}}/g, horario || '19:00')
     .replace(/{{LOCAL}}/g, local || 'Clube Recreativo Central')
-    .replace(/{{VALOR}}/g, valorCartela || 'R$ 10,00')
+    .replace(/{{VALOR}}/g, fmtValor(valorCartela) || 'R$ 10,00')
     .replace(/{{QR_CODE}}/g, qrBlock)
     .replace(/{{IMAGEM_PREMIO}}/g, qrBlock) // retrocompat
     .replace(/{{TABELA}}/g, tabelaHTML)
