@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
-import { Save, RefreshCw, Code2, CheckCircle, ExternalLink } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Save, RefreshCw, Code2, CheckCircle } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import Layout from '../components/Layout'
-import { gerarCartelaPreview } from '../utils/bingoGenerator'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -115,14 +114,13 @@ const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 </html>`
 
 export default function TemplatePage() {
-  const iframeRef = useRef(null)
   const [html, setHtml] = useState(DEFAULT_TEMPLATE)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
   const [previewing, setPreviewing] = useState(false)
+  const [previewHtml, setPreviewHtml] = useState('')  // HTML renderizado pelo backend
   const [tab, setTab] = useState('editor')
-  const [previewKey, setPreviewKey] = useState(0)
 
   // Carrega template salvo via API do backend
   useEffect(() => {
@@ -133,34 +131,29 @@ export default function TemplatePage() {
       .finally(() => setLoading(false))
   }, [])
 
-  // Preview via backend — sem Blob URL, sem iframe sandbox
-  const loadPreview = async () => {
-    if (!iframeRef.current) return
+  // Quando entra no preview, busca HTML renderizado do backend
+  const loadPreview = async (templateHtml) => {
     setPreviewing(true)
+    setPreviewHtml('')
     try {
       const res = await fetch(`${API_URL}/api/template/preview`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html }),
+        body: JSON.stringify({ html: templateHtml }),
       })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const text = await res.text()
-      // Escreve diretamente no documento do iframe
-      const doc = iframeRef.current.contentDocument || iframeRef.current.contentWindow?.document
-      if (doc) {
-        doc.open()
-        doc.write(text)
-        doc.close()
-      }
-    } catch (err) {
-      toast.error('Erro ao carregar preview.')
+      setPreviewHtml(text)  // seta como srcdoc via React state — sem postMessage
+    } catch {
+      toast.error('Erro ao gerar preview. Verifique se o backend está online.')
     } finally {
       setPreviewing(false)
     }
   }
 
   useEffect(() => {
-    if (tab === 'preview') loadPreview()
-  }, [tab, previewKey])
+    if (tab === 'preview') loadPreview(html)
+  }, [tab])
 
   const handleSave = async () => {
     setSaving(true)
@@ -170,29 +163,32 @@ export default function TemplatePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ html }),
       })
-      if (!res.ok) throw new Error('Falha ao salvar')
+      if (!res.ok) throw new Error()
       setSaved(true)
-      toast.success('Template salvo! Será usado na próxima geração de PDF.')
+      toast.success('Template salvo!')
       setTimeout(() => setSaved(false), 3000)
     } catch {
-      toast.error('Erro ao salvar template. Verifique se o backend está online.')
+      toast.error('Erro ao salvar. Verifique se o backend está online.')
     } finally {
       setSaving(false)
     }
   }
 
   const handleReset = () => {
-    if (!confirm('Restaurar o template padrão? O conteúdo atual será perdido.')) return
+    if (!confirm('Restaurar o template padrão?')) return
     setHtml(DEFAULT_TEMPLATE)
     toast.success('Template restaurado.')
-    if (tab === 'preview') setPreviewKey(k => k + 1)
   }
 
-  const copyVar = (v) => navigator.clipboard.writeText(v).then(() => toast.success(`${v} copiado!`))
+  const handleRefreshPreview = () => loadPreview(html)
+
+  const copyVar = (v) =>
+    navigator.clipboard.writeText(v).then(() => toast.success(`${v} copiado!`))
 
   return (
     <Layout>
       <div className="flex-1 flex flex-col min-h-0">
+
         {/* Header */}
         <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <div>
@@ -224,14 +220,15 @@ export default function TemplatePage() {
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
-                tab === t.key ? 'border-[#0D1F3C] text-[#0D1F3C]' : 'border-transparent text-gray-500 hover:text-gray-700'
+                tab === t.key
+                  ? 'border-[#0D1F3C] text-[#0D1F3C]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}>
               {t.label}
             </button>
           ))}
           {tab === 'preview' && (
-            <button onClick={() => setPreviewKey(k => k + 1)}
-              disabled={previewing}
+            <button onClick={handleRefreshPreview} disabled={previewing}
               className="ml-auto flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#0D1F3C] py-2 transition-colors disabled:opacity-50">
               <RefreshCw size={12} className={previewing ? 'animate-spin' : ''} />
               {previewing ? 'Carregando…' : 'Novos números'}
@@ -254,7 +251,8 @@ export default function TemplatePage() {
               style={{ minHeight: 'calc(100vh - 160px)' }}
             />
           ) : (
-            <div className="flex items-start justify-center bg-gray-300 overflow-auto p-8"
+            <div
+              className="flex items-start justify-center bg-gray-300 overflow-auto p-8"
               style={{ minHeight: 'calc(100vh - 160px)' }}>
               <div className="shadow-2xl relative" style={{ width: 794 }}>
                 {previewing && (
@@ -265,11 +263,16 @@ export default function TemplatePage() {
                     </div>
                   </div>
                 )}
-                <iframe
-                  ref={iframeRef}
-                  title="Preview A4"
-                  style={{ width: 794, height: 1123, border: 'none', display: 'block', background: '#F2F5FA' }}
-                />
+                {/* srcdoc setado via React state — sem Blob URL, sem postMessage, sem interferência de extensão */}
+                {previewHtml && (
+                  <iframe
+                    key={previewHtml.slice(-20)} /* recria quando muda */
+                    srcDoc={previewHtml}
+                    title="Preview A4"
+                    sandbox="allow-same-origin"
+                    style={{ width: 794, height: 1123, border: 'none', display: 'block', background: '#F2F5FA' }}
+                  />
+                )}
               </div>
             </div>
           )}
