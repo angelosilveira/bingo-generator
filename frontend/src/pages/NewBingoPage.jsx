@@ -85,7 +85,7 @@ export default function NewBingoPage() {
 
       toast.success('Gerando cartelas, aguarde…')
 
-      // 3. Dispara a geração do PDF no backend
+      // 3. Chama o backend e recebe o PDF direto como blob
       const res = await fetch(`${API_URL}/api/bingo/gerar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -99,7 +99,16 @@ export default function NewBingoPage() {
 
       if (!res.ok) throw new Error('Falha ao gerar PDF')
 
-      toast.success('PDF gerado com sucesso!')
+      // 4. Dispara o download automaticamente
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `bingo-${docRef.id}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+
+      toast.success(`${form.quantidadeCartelas} cartelas geradas! Download iniciado.`)
       navigate('/')
     } catch (err) {
       console.error(err)

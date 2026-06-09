@@ -32,17 +32,28 @@ export default function DashboardPage() {
     navigate('/login')
   }
 
-  const handleDownload = (pdfBase64, numero) => {
-    const byteChars = atob(pdfBase64)
-    const byteArr = new Uint8Array(byteChars.length)
-    for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i)
-    const blob = new Blob([byteArr], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `bingo-${numero}.pdf`
-    a.click()
-    URL.revokeObjectURL(url)
+  const handleDownload = async (id) => {
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+    toast.loading('Gerando PDF…', { id: 'pdf' })
+    try {
+      const bingo = bingos.find(b => b.id === id)
+      const res = await fetch(`${API_URL}/api/bingo/gerar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bingoId: id, ...bingo }),
+      })
+      if (!res.ok) throw new Error()
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `bingo-${id}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success('Download concluído!', { id: 'pdf' })
+    } catch {
+      toast.error('Erro ao baixar PDF.', { id: 'pdf' })
+    }
   }
 
   return (
@@ -137,9 +148,9 @@ export default function DashboardPage() {
                     <span className="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-medium">
                       Gerando…
                     </span>
-                  ) : b.pdfBase64 ? (
+                  ) : b.status === 'done' ? (
                     <button
-                      onClick={() => handleDownload(b.pdfBase64, b.id)}
+                      onClick={() => handleDownload(b.id)}
                       className="flex items-center gap-2 bg-[#1a3a6b] hover:bg-[#0f2347] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
                     >
                       <Download size={15} />

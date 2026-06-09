@@ -6,7 +6,21 @@ import bingoRouter from './routes/bingo.js'
 const app = express()
 const PORT = process.env.PORT || 3001
 
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }))
+const allowedOrigins = [
+  process.env.FRONTEND_URL || 'http://localhost:5173',
+  'http://localhost:5173',
+]
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Permite sem origin (ex: Postman) ou origins na lista e *.vercel.app
+    if (!origin || allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  }
+}))
 app.use(express.json())
 
 app.get('/health', (_, res) => res.json({ ok: true }))

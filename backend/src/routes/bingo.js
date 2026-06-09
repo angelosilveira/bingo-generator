@@ -6,8 +6,8 @@ const router = express.Router()
 
 /**
  * POST /api/bingo/gerar
- * Gera o PDF de um bingo e salva no Firebase Storage.
- * Atualiza o documento no Firestore com a URL do PDF.
+ * Gera o PDF e retorna direto como download (application/pdf).
+ * Também atualiza o status no Firestore.
  */
 router.post('/gerar', async (req, res) => {
   const {
@@ -25,9 +25,6 @@ router.post('/gerar', async (req, res) => {
     return res.status(400).json({ error: 'bingoId e quantidadeCartelas são obrigatórios.' })
   }
 
-  // Responde imediatamente — a geração acontece em background
-  res.json({ message: 'Geração iniciada.', bingoId })
-
   try {
     console.log(`🎱 Gerando ${quantidadeCartelas} cartelas para bingo ${bingoId}…`)
 
@@ -41,22 +38,26 @@ router.post('/gerar', async (req, res) => {
       valorCartela,
     })
 
-    // Converte PDF para Base64 e salva direto no Firestore
-    const pdfBase64 = pdfBuffer.toString('base64')
-
-    // Atualiza o Firestore com o PDF em Base64
+    // Atualiza status no Firestore
     await db.collection('bingos').doc(bingoId).update({
       status: 'done',
-      pdfBase64,
       pdfGeneratedAt: new Date(),
     })
 
-    console.log(`✅ PDF gerado com sucesso: ${filename}`)
+    console.log(`✅ PDF gerado: ${pdfBuffer.length} bytes`)
+
+    // Retorna o PDF diretamente como download
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="bingo-${bingoId}.pdf"`,
+      'Content-Length': pdfBuffer.length,
+    })
+    res.send(pdfBuffer)
+
   } catch (err) {
     console.error('❌ Erro ao gerar PDF:', err)
-    await db.collection('bingos').doc(bingoId).update({
-      status: 'error',
-    })
+    await db.collection('bingos').doc(bingoId).update({ status: 'error' }).catch(() => {})
+    res.status(500).json({ error: 'Erro ao gerar PDF.' })
   }
 })
 

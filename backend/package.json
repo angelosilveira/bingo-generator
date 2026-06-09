@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "postinstall": "node -e \"require('child_process').execSync('npx puppeteer browsers install chrome', {stdio: 'inherit'})\" || true"
   },
   "dependencies": {
     "cors": "^2.8.5",
