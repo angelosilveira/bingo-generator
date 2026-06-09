@@ -2,6 +2,7 @@ import puppeteer from 'puppeteer'
 import { gerarCartela } from './bingoGenerator.js'
 import { gerarHTMLCartela } from '../templates/cartela.js'
 import { gerarQRCode } from './qrService.js'
+import { fmtValor } from '../utils/format.js'
 
 const BATCH_SIZE = 20
 
@@ -22,13 +23,6 @@ function renderTemplate(template, { numero, rows, premio, premioQrUrl, data, hor
     : `<div style="width:90px;height:90px;margin:0 auto 6px;background:#f0f0f0;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;border-radius:6px;"><div style="font-size:10px;color:#999;text-align:center;line-height:1.3;padding:4px;">QR CODE</div></div>`
 
 
-  function fmtValor(v) {
-    if (!v) return ''
-    if (typeof v === 'string' && v.includes('R$')) return v
-    const n = parseFloat(String(v).replace(',', '.'))
-    if (isNaN(n)) return v
-    return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-  }
   return template
     .replace(/{{NUMERO}}/g, numFormatado)
     .replace(/{{PREMIO}}/g, premio || 'A DEFINIR')
