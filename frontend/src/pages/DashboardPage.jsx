@@ -32,11 +32,17 @@ export default function DashboardPage() {
     navigate('/login')
   }
 
-  const handleDownload = (pdfUrl, numero) => {
+  const handleDownload = (pdfBase64, numero) => {
+    const byteChars = atob(pdfBase64)
+    const byteArr = new Uint8Array(byteChars.length)
+    for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i)
+    const blob = new Blob([byteArr], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = pdfUrl
+    a.href = url
     a.download = `bingo-${numero}.pdf`
     a.click()
+    URL.revokeObjectURL(url)
   }
 
   return (
@@ -131,9 +137,9 @@ export default function DashboardPage() {
                     <span className="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-medium">
                       Gerando…
                     </span>
-                  ) : b.pdfUrl ? (
+                  ) : b.pdfBase64 ? (
                     <button
-                      onClick={() => handleDownload(b.pdfUrl, b.id)}
+                      onClick={() => handleDownload(b.pdfBase64, b.id)}
                       className="flex items-center gap-2 bg-[#1a3a6b] hover:bg-[#0f2347] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
                     >
                       <Download size={15} />

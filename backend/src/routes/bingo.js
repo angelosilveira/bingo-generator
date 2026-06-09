@@ -1,5 +1,5 @@
 import express from 'express'
-import { db, bucket } from '../services/firebase.js'
+import { db } from '../services/firebase.js'
 import { gerarPDF } from '../services/pdfService.js'
 
 const router = express.Router()
@@ -14,7 +14,7 @@ router.post('/gerar', async (req, res) => {
     bingoId,
     quantidadeCartelas,
     premio,
-    premioImageUrl,
+    premioImageBase64,
     data,
     horario,
     local,
@@ -34,31 +34,20 @@ router.post('/gerar', async (req, res) => {
     const pdfBuffer = await gerarPDF({
       quantidadeCartelas: Number(quantidadeCartelas),
       premio,
-      premioImageUrl,
+      premioImageBase64,
       data,
       horario,
       local,
       valorCartela,
     })
 
-    // Upload do PDF no Firebase Storage
-    const filename = `pdfs/bingo-${bingoId}.pdf`
-    const file = bucket.file(filename)
+    // Converte PDF para Base64 e salva direto no Firestore
+    const pdfBase64 = pdfBuffer.toString('base64')
 
-    await file.save(pdfBuffer, {
-      metadata: { contentType: 'application/pdf' },
-    })
-
-    // Gera URL pública assinada (válida por 7 dias)
-    const [pdfUrl] = await file.getSignedUrl({
-      action: 'read',
-      expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
-    })
-
-    // Atualiza o Firestore
+    // Atualiza o Firestore com o PDF em Base64
     await db.collection('bingos').doc(bingoId).update({
       status: 'done',
-      pdfUrl,
+      pdfBase64,
       pdfGeneratedAt: new Date(),
     })
 

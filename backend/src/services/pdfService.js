@@ -10,7 +10,7 @@ import { gerarHTMLCartela } from '../templates/cartela.js'
 export async function gerarPDF({
   quantidadeCartelas,
   premio,
-  premioImageUrl,
+  premioImageBase64,
   data,
   horario,
   local,
@@ -34,7 +34,7 @@ export async function gerarPDF({
         numero: i,
         rows,
         premio,
-        premioImageUrl,
+        premioImageBase64,
         data,
         horario,
         local,
@@ -76,23 +76,6 @@ ${allCartelasHTML
 </html>`
 
     await page.setContent(fullHTML, { waitUntil: 'networkidle0' })
-
-    // Aguarda imagens carregarem (se houver URL de prêmio)
-    if (premioImageUrl) {
-      await page.evaluate(() => {
-        return Promise.all(
-          Array.from(document.images)
-            .filter((img) => !img.complete)
-            .map(
-              (img) =>
-                new Promise((resolve) => {
-                  img.onload = resolve
-                  img.onerror = resolve
-                })
-            )
-        )
-      })
-    }
 
     const pdfBuffer = await page.pdf({
       format: 'A4',

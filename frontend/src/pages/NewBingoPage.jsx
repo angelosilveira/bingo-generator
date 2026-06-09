@@ -1,12 +1,33 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { db, storage } from '../services/firebase'
+import { db } from '../services/firebase'
 import { ArrowLeft, Upload, ImageIcon, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+
+// Converte o arquivo de imagem para Base64 e redimensiona para max 600px
+function imageFileToBase64(file, maxSize = 600) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const ratio = Math.min(maxSize / img.width, maxSize / img.height, 1)
+        canvas.width = img.width * ratio
+        canvas.height = img.height * ratio
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL('image/jpeg', 0.85))
+      }
+      img.onerror = reject
+      img.src = e.target.result
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
 
 export default function NewBingoPage() {
   const navigate = useNavigate()
@@ -46,19 +67,17 @@ export default function NewBingoPage() {
     setSubmitting(true)
 
     try {
-      // 1. Upload da imagem no Firebase Storage
-      let premioImageUrl = null
+      // 1. Converte imagem para Base64 (redimensionada, sem Storage)
+      let premioImageBase64 = null
       if (imageFile) {
-        const storageRef = ref(storage, `premios/${Date.now()}_${imageFile.name}`)
-        const snap = await uploadBytes(storageRef, imageFile)
-        premioImageUrl = await getDownloadURL(snap.ref)
+        premioImageBase64 = await imageFileToBase64(imageFile)
       }
 
       // 2. Salva o registro no Firestore com status "processing"
       const docRef = await addDoc(collection(db, 'bingos'), {
         ...form,
         quantidadeCartelas: Number(form.quantidadeCartelas),
-        premioImageUrl,
+        premioImageBase64,
         status: 'processing',
         pdfUrl: null,
         createdAt: serverTimestamp(),
@@ -74,7 +93,7 @@ export default function NewBingoPage() {
           bingoId: docRef.id,
           ...form,
           quantidadeCartelas: Number(form.quantidadeCartelas),
-          premioImageUrl,
+          premioImageBase64,
         }),
       })
 

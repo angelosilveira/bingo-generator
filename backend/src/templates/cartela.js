@@ -6,7 +6,7 @@ export function gerarHTMLCartela({
   numero,
   rows,
   premio,
-  premioImageUrl,
+  premioImageBase64,
   data,
   horario,
   local,
@@ -353,8 +353,8 @@ export function gerarHTMLCartela({
     <div class="prize-box">
       <div class="prize-label">PRÊMIO</div>
       ${
-        premioImageUrl
-          ? `<img class="prize-img" src="${premioImageUrl}" alt="${premio}" />`
+        premioImageBase64
+          ? `<img class="prize-img" src="${premioImageBase64}" alt="${premio}" />`
           : `<div class="prize-placeholder">🎁</div>`
       }
       ${premio ? `<div class="prize-desc">${premio}</div>` : ''}
