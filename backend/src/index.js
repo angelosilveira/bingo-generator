@@ -7,13 +7,13 @@ const app = express()
 const PORT = process.env.PORT || 3001
 
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5173',
   'http://localhost:5173',
-]
+  'https://bingo-generator-nine.vercel.app',
+  process.env.FRONTEND_URL,
+].filter(Boolean)
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permite sem origin (ex: Postman) ou origins na lista e *.vercel.app
     if (!origin || allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
       callback(null, true)
     } else {
