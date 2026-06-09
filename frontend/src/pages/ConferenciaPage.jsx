@@ -116,80 +116,6 @@ export default function ConferenciaPage() {
         boxSizing: 'border-box',
       }}>
 
-        {/* ── GRADE DE NÚMEROS ── */}
-        <div style={{
-          background: '#fff',
-          borderRadius: 16,
-          padding: '12px 10px',
-          boxShadow: '0 1px 4px rgba(0,0,0,.06)',
-          border: '1px solid #e5eaf2',
-        }}>
-          {/* Cabeçalho B I N G O */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 4, marginBottom: 4 }}>
-            {Object.entries(COLS).map(([col, { bg }]) => (
-              <div key={col} style={{
-                background: bg,
-                borderRadius: 8,
-                textAlign: 'center',
-                padding: '8px 0',
-                fontFamily: "Impact,'Arial Black',Arial,sans-serif",
-                fontSize: 'clamp(18px,4vw,28px)',
-                color: '#fff',
-                letterSpacing: 2,
-              }}>{col}</div>
-            ))}
-          </div>
-
-          {/* Números 15 linhas × 5 colunas */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 4 }}>
-            {Array.from({ length: 15 }, (_, row) =>
-              Object.entries(COLS).map(([col, { bg, range: [min] }]) => {
-                const n = min + row
-                const isSorteado = sorteados.includes(n)
-                const isAnim = animando === n
-                const ordem = isSorteado ? sorteados.indexOf(n) + 1 : null
-
-                return (
-                  <div key={n} onClick={() => toggleNumero(n)} onTouchEnd={e => { e.preventDefault(); toggleNumero(n) }} tabIndex={-1}
-                    style={{
-                      aspectRatio: '1/1',
-                      borderRadius: 8,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                      position: 'relative',
-                      transition: 'all .2s',
-                      background: isSorteado ? bg : '#F8FAFF',
-                      border: isSorteado ? 'none' : '2px solid #E2E8F2',
-                      transform: isAnim ? 'scale(1.18)' : 'scale(1)',
-                      boxShadow: isAnim ? `0 0 0 3px ${bg}55` : isSorteado ? '0 2px 6px rgba(0,0,0,.15)' : 'none',
-                    }}>
-                    <span style={{
-                      fontFamily: "Impact,'Arial Black',Arial,sans-serif",
-                      fontSize: 'clamp(13px,3.2vw,22px)',
-                      fontWeight: 900,
-                      color: isSorteado ? '#fff' : '#0D1F3C',
-                      lineHeight: 1,
-                    }}>{n}</span>
-                    {isSorteado && ordem && (
-                      <span style={{
-                        position: 'absolute', bottom: 2, right: 3,
-                        fontSize: 'clamp(6px,1.2vw,9px)',
-                        color: 'rgba(255,255,255,.75)',
-                        fontWeight: 700,
-                        lineHeight: 1,
-                      }}>{ordem}º</span>
-                    )}
-                  </div>
-                )
-              })
-            )}
-          </div>
-        </div>
-
         {/* ── HISTÓRICO ── */}
         <div style={{
           background: '#fff',
@@ -285,6 +211,85 @@ export default function ConferenciaPage() {
               })}
             </div>
           )}
+        </div>
+
+      </div>
+    </div>
+  )
+}
+
+        {/* ── GRADE DE NÚMEROS ── */}
+        <div style={{
+          background: '#fff',
+          borderRadius: 16,
+          padding: '12px 10px',
+          boxShadow: '0 1px 4px rgba(0,0,0,.06)',
+          border: '1px solid #e5eaf2',
+        }}>
+          {/* Cabeçalho B I N G O */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 4, marginBottom: 4 }}>
+            {Object.entries(COLS).map(([col, { bg }]) => (
+              <div key={col} style={{
+                background: bg,
+                borderRadius: 8,
+                textAlign: 'center',
+                padding: '8px 0',
+                fontFamily: "Impact,'Arial Black',Arial,sans-serif",
+                fontSize: 'clamp(18px,4vw,28px)',
+                color: '#fff',
+                letterSpacing: 2,
+              }}>{col}</div>
+            ))}
+          </div>
+
+          {/* Números 15 linhas × 5 colunas */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 4 }}>
+            {Array.from({ length: 15 }, (_, row) =>
+              Object.entries(COLS).map(([col, { bg, range: [min] }]) => {
+                const n = min + row
+                const isSorteado = sorteados.includes(n)
+                const isAnim = animando === n
+                const ordem = isSorteado ? sorteados.indexOf(n) + 1 : null
+
+                return (
+                  <div key={n} onClick={() => toggleNumero(n)} onTouchEnd={e => { e.preventDefault(); toggleNumero(n) }} tabIndex={-1}
+                    style={{
+                      aspectRatio: '1/1',
+                      borderRadius: 8,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      position: 'relative',
+                      transition: 'all .2s',
+                      background: isSorteado ? bg : '#F8FAFF',
+                      border: isSorteado ? 'none' : '2px solid #E2E8F2',
+                      transform: isAnim ? 'scale(1.18)' : 'scale(1)',
+                      boxShadow: isAnim ? `0 0 0 3px ${bg}55` : isSorteado ? '0 2px 6px rgba(0,0,0,.15)' : 'none',
+                    }}>
+                    <span style={{
+                      fontFamily: "Impact,'Arial Black',Arial,sans-serif",
+                      fontSize: 'clamp(13px,3.2vw,22px)',
+                      fontWeight: 900,
+                      color: isSorteado ? '#fff' : '#0D1F3C',
+                      lineHeight: 1,
+                    }}>{n}</span>
+                    {isSorteado && ordem && (
+                      <span style={{
+                        position: 'absolute', bottom: 2, right: 3,
+                        fontSize: 'clamp(6px,1.2vw,9px)',
+                        color: 'rgba(255,255,255,.75)',
+                        fontWeight: 700,
+                        lineHeight: 1,
+                      }}>{ordem}º</span>
+                    )}
+                  </div>
+                )
+              })
+            )}
+          </div>
         </div>
 
       </div>
