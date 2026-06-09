@@ -31,14 +31,12 @@ router.post('/', async (req, res) => {
   }
 })
 
-// POST /api/template/preview — renderiza uma cartela de exemplo como HTML
+// POST /api/template/preview — renderiza cartela de exemplo como HTML completo
 router.post('/preview', async (req, res) => {
   const { html } = req.body
   if (!html) return res.status(400).json({ error: 'html obrigatório' })
 
   const rows = gerarCartela()
-  const numero = 1
-  const numFormatado = '0001'
   const dataFormatada = new Date().toLocaleDateString('pt-BR')
 
   const tabelaHTML = rows.map(row =>
@@ -48,7 +46,7 @@ router.post('/preview', async (req, res) => {
   ).join('')
 
   const rendered = html
-    .replace(/{{NUMERO}}/g, numFormatado)
+    .replace(/{{NUMERO}}/g, '0001')
     .replace(/{{PREMIO}}/g, 'Smart TV 55" Samsung')
     .replace(/{{DATA}}/g, dataFormatada)
     .replace(/{{HORARIO}}/g, '19:00')
@@ -62,4 +60,3 @@ router.post('/preview', async (req, res) => {
 })
 
 export default router
-# force redeploy Tue Jun  9 14:09:28 UTC 2026
