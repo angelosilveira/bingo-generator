@@ -2,11 +2,6 @@ import puppeteer from 'puppeteer'
 import { gerarCartela } from './bingoGenerator.js'
 import { gerarHTMLCartela } from '../templates/cartela.js'
 
-/**
- * Gera um PDF com N cartelas de bingo usando Puppeteer.
- * Cada cartela ocupa uma página A4.
- * Retorna um Buffer com o PDF pronto.
- */
 export async function gerarPDF({
   quantidadeCartelas,
   premio,
@@ -17,7 +12,7 @@ export async function gerarPDF({
   valorCartela,
 }) {
   const browser = await puppeteer.launch({
-    headless: 'new',
+    headless: true,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -26,14 +21,17 @@ export async function gerarPDF({
       '--no-first-run',
       '--no-zygote',
       '--single-process',
+      '--disable-extensions',
     ],
   })
 
   try {
     const page = await browser.newPage()
 
-    // Monta o HTML de todas as cartelas em um único documento,
-    // cada uma em sua própria "página" via page-break-after.
+    // Aumenta o timeout para 1000 cartelas (5 minutos)
+    page.setDefaultNavigationTimeout(300000)
+    page.setDefaultTimeout(300000)
+
     const allCartelasHTML = []
 
     for (let i = 1; i <= quantidadeCartelas; i++) {
@@ -51,7 +49,6 @@ export async function gerarPDF({
       allCartelasHTML.push(html)
     }
 
-    // Envolve tudo em um documento com page-break entre cartelas
     const fullHTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -74,7 +71,6 @@ export async function gerarPDF({
 <body>
 ${allCartelasHTML
   .map((html) => {
-    // Extrai somente o <body> de cada cartela para embutir no documento único
     const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i)
     const bodyContent = bodyMatch ? bodyMatch[1] : html
     return `<div class="page-wrap">${bodyContent}</div>`
@@ -83,11 +79,15 @@ ${allCartelasHTML
 </body>
 </html>`
 
-    await page.setContent(fullHTML, { waitUntil: 'networkidle0' })
+    await page.setContent(fullHTML, {
+      waitUntil: 'domcontentloaded',
+      timeout: 300000,
+    })
 
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
+      timeout: 300000,
     })
 
     return pdfBuffer

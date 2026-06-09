@@ -4,11 +4,6 @@ import { gerarPDF } from '../services/pdfService.js'
 
 const router = express.Router()
 
-/**
- * POST /api/bingo/gerar
- * Gera o PDF e retorna direto como download (application/pdf).
- * Também atualiza o status no Firestore.
- */
 router.post('/gerar', async (req, res) => {
   const {
     bingoId,
@@ -38,7 +33,6 @@ router.post('/gerar', async (req, res) => {
       valorCartela,
     })
 
-    // Atualiza status no Firestore
     await db.collection('bingos').doc(bingoId).update({
       status: 'done',
       pdfGeneratedAt: new Date(),
@@ -46,7 +40,6 @@ router.post('/gerar', async (req, res) => {
 
     console.log(`✅ PDF gerado: ${pdfBuffer.length} bytes`)
 
-    // Retorna o PDF diretamente como download
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="bingo-${bingoId}.pdf"`,
@@ -55,9 +48,10 @@ router.post('/gerar', async (req, res) => {
     res.send(pdfBuffer)
 
   } catch (err) {
-    console.error('❌ Erro ao gerar PDF:', err)
+    console.error('❌ Erro detalhado:', err.message)
+    console.error('❌ Stack:', err.stack)
     await db.collection('bingos').doc(bingoId).update({ status: 'error' }).catch(() => {})
-    res.status(500).json({ error: 'Erro ao gerar PDF.' })
+    res.status(500).json({ error: 'Erro ao gerar PDF.', detail: err.message })
   }
 })
 
