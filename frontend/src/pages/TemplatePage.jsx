@@ -14,119 +14,102 @@ const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <meta charset="UTF-8"/>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  html, body { width:794px; height:1123px; background:#F4F7FC; font-family:Arial,sans-serif; overflow:hidden; }
-  body { padding:28px 28px 22px 28px; display:flex; flex-direction:column; gap:0; }
-  table { border-collapse:separate; border-spacing:5px; width:100%; }
-  .card { flex:1; background:#fff; border-radius:16px; border:3px solid #0B2E5E; box-shadow:0 2px 0 #0B2E5E,inset 0 0 0 6px #fff,inset 0 0 0 8px #0B2E5E; display:flex; gap:0; overflow:hidden; margin-bottom:14px; }
-  .left { flex:1; min-width:0; padding:22px 18px 22px 22px; display:flex; flex-direction:column; gap:10px; border-right:3px solid #0B2E5E; }
-  .bingo-header { text-align:center; background:#0B2E5E; border-radius:10px; padding:6px 0 4px; position:relative; overflow:hidden; }
-  .bingo-header-bg { position:absolute;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(45deg,transparent,transparent 8px,rgba(240,165,0,.12) 8px,rgba(240,165,0,.12) 16px); }
-  .bingo-title { font-family:Impact,'Arial Black',Arial,sans-serif; font-size:86px; font-weight:900; color:#F0A500; letter-spacing:8px; text-shadow:3px 3px 0 rgba(0,0,0,.4); line-height:1; position:relative; }
-  .num-wrap { display:flex; justify-content:center; }
-  .num-label { background:#0B2E5E; color:#F0A500; font-size:11px; font-weight:900; padding:4px 20px 3px; border-radius:6px 6px 0 0; letter-spacing:2.5px; text-transform:uppercase; }
-  .num-val { background:#fff; border:3px solid #0B2E5E; border-top:none; border-radius:0 0 8px 8px; padding:2px 32px 4px; font-family:Impact,'Arial Black',Arial,sans-serif; font-size:48px; font-weight:900; color:#D42B2B; letter-spacing:4px; text-align:center; }
-  .th { color:#fff; font-family:Impact,'Arial Black',Arial,sans-serif; font-size:38px; font-weight:900; text-align:center; padding:12px 0; border-radius:6px; width:20%; letter-spacing:2px; height:62px; }
-  .th-b,.th-n,.th-o { background:#0B2E5E; }
-  .th-i,.th-g { background:#F0A500; }
-  .td { background:#fff; font-family:Impact,'Arial Black',Arial,sans-serif; font-size:40px; font-weight:900; text-align:center; border-radius:6px; color:#0B2E5E; height:76px; vertical-align:middle; border:2px solid #e8eef8; }
-  .td-free { font-size:32px; }
-  .right { width:218px; padding:22px 18px 18px; display:flex; flex-direction:column; gap:12px; background:#F8FAFF; }
-  .prize-label { background:#0B2E5E; color:#F0A500; font-size:11px; font-weight:900; padding:5px 0; border-radius:6px 6px 0 0; letter-spacing:2.5px; text-align:center; }
-  .prize-body { border:2px solid #0B2E5E; border-top:none; border-radius:0 0 10px 10px; padding:12px 8px 10px; background:#fff; text-align:center; }
-  .prize-img { width:100%; max-height:100px; object-fit:contain; display:block; margin:0 auto 6px; }
-  .prize-desc { font-size:12px; color:#333; font-weight:700; line-height:1.3; }
-  .info-row { display:flex; align-items:center; gap:10px; border-bottom:1.5px solid #e0e8f4; padding-bottom:10px; }
-  .info-icon { font-size:20px; flex-shrink:0; }
-  .info-lbl { font-size:9px; font-weight:900; color:#F0A500; letter-spacing:1.5px; text-transform:uppercase; }
-  .info-val { font-size:14px; font-weight:700; color:#0B2E5E; }
-  .valor-wrap { margin-top:auto; border-radius:10px; overflow:hidden; border:2px solid #0B2E5E; }
-  .valor-lbl { background:#0B2E5E; color:#fff; font-size:10px; font-weight:900; text-align:center; padding:5px; letter-spacing:2px; }
-  .valor-val { background:#F0A500; font-family:Impact,'Arial Black',Arial,sans-serif; font-size:38px; font-weight:900; color:#fff; text-align:center; padding:8px 0; text-shadow:2px 2px 0 rgba(0,0,0,.25); letter-spacing:1px; }
-  .scissors { display:flex; align-items:center; gap:6px; color:#999; margin-bottom:14px; flex-shrink:0; }
-  .scissors hr { flex:1; border:none; border-top:2px dashed #aaa; }
-  .scissors span { font-size:16px; transform:rotate(-90deg); display:inline-block; }
-  .stub { background:#fff; border-radius:12px; border:2px solid #0B2E5E; display:flex; align-items:stretch; gap:0; flex-shrink:0; overflow:hidden; }
-  .stub-tag { background:#0B2E5E; color:#F0A500; font-size:11px; font-weight:900; writing-mode:vertical-rl; transform:rotate(180deg); padding:14px 10px; letter-spacing:3px; flex-shrink:0; }
-  .stub-fields { flex:1; padding:14px 16px; display:flex; flex-direction:column; gap:10px; justify-content:center; }
-  .stub-num { font-family:Impact,'Arial Black',Arial,sans-serif; font-size:17px; font-weight:900; color:#0B2E5E; letter-spacing:1px; }
-  .stub-field { display:flex; align-items:flex-end; gap:8px; }
-  .stub-field span { font-size:13px; font-weight:700; color:#555; white-space:nowrap; padding-bottom:2px; }
-  .stub-field hr { flex:1; border:none; border-bottom:1.5px solid #0B2E5E; min-height:22px; }
-  .stub-logo { background:#F8FAFF; border-left:2px solid #0B2E5E; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:14px 16px; gap:2px; flex-shrink:0; }
+  html, body { width:794px; height:1123px; background:#F2F5FA; font-family:Arial,sans-serif; overflow:hidden; }
+  body { display:flex; flex-direction:column; }
+  table { border-collapse:collapse; width:100%; }
+  .th { font-family:Impact,'Arial Black',Arial,sans-serif; font-size:42px; font-weight:900; text-align:center; letter-spacing:3px; width:20%; padding:14px 0; }
+  .th-dark { background:#0D1F3C; color:#fff; }
+  .th-gold  { background:#E8A000; color:#fff; }
+  .td { font-family:Impact,'Arial Black',Arial,sans-serif; font-size:46px; font-weight:900; text-align:center; color:#0D1F3C; height:80px; vertical-align:middle; border:1px solid #E2E8F2; }
+  .td-free  { font-size:36px; color:#E8A000; }
 </style>
 </head>
 <body>
 
-<div class="card">
-  <div class="left">
-    <div class="bingo-header">
-      <div class="bingo-header-bg"></div>
-      <span class="bingo-title">BINGO</span>
-    </div>
-    <div class="num-wrap">
-      <div>
-        <div class="num-label">Nº da Cartela</div>
-        <div class="num-val">{{NUMERO}}</div>
-      </div>
-    </div>
-    <div style="flex:1;">
-      <table style="height:100%;">
-        <thead>
-          <tr>
-            <td class="th th-b">B</td><td class="th th-i">I</td>
-            <td class="th th-n">N</td><td class="th th-g">G</td>
-            <td class="th th-o">O</td>
-          </tr>
-        </thead>
-        <tbody>{{TABELA}}</tbody>
-      </table>
-    </div>
+<!-- HEADER -->
+<div style="background:linear-gradient(135deg,#0D1F3C 0%,#162E58 50%,#0D1F3C 100%);padding:18px 32px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:relative;overflow:hidden;">
+  <div style="position:absolute;inset:0;background:repeating-linear-gradient(-55deg,transparent,transparent 18px,rgba(232,160,0,.06) 18px,rgba(232,160,0,.06) 36px);pointer-events:none;"></div>
+  <div style="position:relative;">
+    <div style="font-family:Impact,'Arial Black',Arial,sans-serif;font-size:88px;line-height:1;color:#E8A000;letter-spacing:10px;text-shadow:0 4px 24px rgba(0,0,0,.5),3px 3px 0 rgba(0,0,0,.3);">BINGO</div>
+    <div style="height:4px;background:linear-gradient(90deg,#E8A000,transparent);margin-top:4px;border-radius:2px;"></div>
   </div>
-
-  <div class="right">
-    <div>
-      <div class="prize-label">PRÊMIO</div>
-      <div class="prize-body">
-        {{IMAGEM_PREMIO}}
-        <div class="prize-desc">{{PREMIO}}</div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;position:relative;">
+    <div style="display:flex;align-items:center;gap:0;">
+      <div style="background:#E8A000;color:#0D1F3C;font-size:10px;font-weight:900;letter-spacing:2px;padding:5px 10px;border-radius:6px 0 0 6px;text-transform:uppercase;white-space:nowrap;line-height:1;">Nº DA<br>CARTELA</div>
+      <div style="background:#fff;color:#C0392B;font-family:Impact,'Arial Black',Arial,sans-serif;font-size:40px;font-weight:900;letter-spacing:4px;padding:0 18px;border-radius:0 6px 6px 0;line-height:1.15;min-width:130px;text-align:center;">{{NUMERO}}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border:1px solid rgba(232,160,0,.4);border-radius:8px;padding:6px 12px;">
+      {{IMAGEM_PREMIO}}
+      <div>
+        <div style="font-size:9px;font-weight:900;color:#E8A000;letter-spacing:1.5px;text-transform:uppercase;">Prêmio</div>
+        <div style="font-size:14px;font-weight:700;color:#fff;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{PREMIO}}</div>
       </div>
-    </div>
-    <div class="info-row">
-      <span class="info-icon">📅</span>
-      <div><div class="info-lbl">Data</div><div class="info-val">{{DATA}}</div></div>
-    </div>
-    <div class="info-row">
-      <span class="info-icon">⏰</span>
-      <div><div class="info-lbl">Horário</div><div class="info-val">{{HORARIO}}</div></div>
-    </div>
-    <div class="info-row">
-      <span class="info-icon">📍</span>
-      <div style="min-width:0;flex:1;">
-        <div class="info-lbl">Local</div>
-        <div class="info-val" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{LOCAL}}</div>
-      </div>
-    </div>
-    <div class="valor-wrap">
-      <div class="valor-lbl">VALOR DA CARTELA</div>
-      <div class="valor-val">{{VALOR}}</div>
     </div>
   </div>
 </div>
 
-<div class="scissors"><hr /><span>✂</span><hr /></div>
+<!-- TABELA -->
+<div style="flex:1;display:flex;flex-direction:column;background:#fff;border-left:4px solid #0D1F3C;border-right:4px solid #0D1F3C;">
+  <table style="height:100%;">
+    <thead>
+      <tr style="height:68px;">
+        <td class="th th-dark">B</td>
+        <td class="th th-gold">I</td>
+        <td class="th th-dark">N</td>
+        <td class="th th-gold">G</td>
+        <td class="th th-dark">O</td>
+      </tr>
+    </thead>
+    <tbody>{{TABELA}}</tbody>
+  </table>
+</div>
 
-<div class="stub">
-  <div class="stub-tag">CANHOTO</div>
-  <div class="stub-fields">
-    <div class="stub-num">Nº <span style="color:#D42B2B;">{{NUMERO}}</span></div>
-    <div class="stub-field"><span>NOME:</span><hr /></div>
-    <div class="stub-field"><span>TELEFONE:</span><hr /></div>
-    <div class="stub-field"><span>ENDEREÇO:</span><hr /></div>
+<!-- FAIXA INFO -->
+<div style="background:#0D1F3C;display:flex;align-items:stretch;flex-shrink:0;border-left:4px solid #0D1F3C;border-right:4px solid #0D1F3C;">
+  <div style="flex:1;padding:12px 16px;border-right:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px;">
+    <span style="font-size:22px;opacity:.9;">📅</span>
+    <div><div style="font-size:9px;font-weight:900;color:#E8A000;letter-spacing:2px;text-transform:uppercase;margin-bottom:2px;">DATA</div><div style="font-size:15px;font-weight:700;color:#fff;">{{DATA}}</div></div>
   </div>
-  <div class="stub-logo">
-    <span style="font-size:32px;line-height:1;">🎱</span>
-    <span style="font-family:Impact,'Arial Black',Arial,sans-serif;font-size:20px;font-weight:900;color:#0B2E5E;letter-spacing:3px;">BINGO</span>
-    <span style="font-size:12px;font-weight:700;color:#F0A500;font-style:italic;">Boa sorte! ♡</span>
+  <div style="flex:1;padding:12px 16px;border-right:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px;">
+    <span style="font-size:22px;opacity:.9;">⏰</span>
+    <div><div style="font-size:9px;font-weight:900;color:#E8A000;letter-spacing:2px;text-transform:uppercase;margin-bottom:2px;">HORÁRIO</div><div style="font-size:15px;font-weight:700;color:#fff;">{{HORARIO}}</div></div>
+  </div>
+  <div style="flex:1;padding:12px 16px;border-right:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px;min-width:0;">
+    <span style="font-size:22px;opacity:.9;flex-shrink:0;">📍</span>
+    <div style="min-width:0;flex:1;"><div style="font-size:9px;font-weight:900;color:#E8A000;letter-spacing:2px;text-transform:uppercase;margin-bottom:2px;">LOCAL</div><div style="font-size:15px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{LOCAL}}</div></div>
+  </div>
+  <div style="background:#E8A000;padding:10px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;min-width:160px;">
+    <div style="font-size:9px;font-weight:900;color:#0D1F3C;letter-spacing:2px;text-transform:uppercase;margin-bottom:2px;">Valor da Cartela</div>
+    <div style="font-family:Impact,'Arial Black',Arial,sans-serif;font-size:32px;font-weight:900;color:#0D1F3C;letter-spacing:1px;line-height:1;">{{VALOR}}</div>
+  </div>
+</div>
+
+<!-- TESOURA -->
+<div style="display:flex;align-items:center;gap:0;flex-shrink:0;padding:10px 0 8px;">
+  <div style="flex:1;border-top:2px dashed #b0bcd0;"></div>
+  <div style="display:flex;align-items:center;gap:6px;padding:0 12px;color:#8899aa;white-space:nowrap;">
+    <span style="font-size:14px;transform:rotate(-90deg);display:inline-block;">✂</span>
+    <span style="font-size:10px;letter-spacing:1px;">DESTAQUE AQUI</span>
+    <span style="font-size:14px;transform:rotate(-90deg);display:inline-block;">✂</span>
+  </div>
+  <div style="flex:1;border-top:2px dashed #b0bcd0;"></div>
+</div>
+
+<!-- CANHOTO -->
+<div style="background:#fff;border:2px solid #0D1F3C;border-radius:10px;margin:0 0 4px;display:flex;align-items:stretch;overflow:hidden;flex-shrink:0;">
+  <div style="background:#0D1F3C;color:#E8A000;font-size:10px;font-weight:900;writing-mode:vertical-rl;transform:rotate(180deg);padding:14px 9px;letter-spacing:3.5px;text-transform:uppercase;flex-shrink:0;">CANHOTO</div>
+  <div style="flex:1;padding:12px 20px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div style="font-family:Impact,'Arial Black',Arial,sans-serif;font-size:15px;color:#0D1F3C;letter-spacing:1px;margin-bottom:8px;">
+      Nº <span style="color:#C0392B;font-size:18px;">{{NUMERO}}</span>
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:4px;"><span style="font-size:11px;font-weight:700;color:#0D1F3C;white-space:nowrap;padding-bottom:3px;min-width:68px;">NOME:</span><div style="flex:1;border-bottom:1.5px solid #0D1F3C;min-height:20px;"></div></div>
+    <div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:4px;"><span style="font-size:11px;font-weight:700;color:#0D1F3C;white-space:nowrap;padding-bottom:3px;min-width:68px;">TELEFONE:</span><div style="flex:1;border-bottom:1.5px solid #0D1F3C;min-height:20px;"></div></div>
+    <div style="display:flex;align-items:flex-end;gap:8px;"><span style="font-size:11px;font-weight:700;color:#0D1F3C;white-space:nowrap;padding-bottom:3px;min-width:68px;">ENDEREÇO:</span><div style="flex:1;border-bottom:1.5px solid #0D1F3C;min-height:20px;"></div></div>
+  </div>
+  <div style="background:#F2F5FA;border-left:2px solid #0D1F3C;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 18px;gap:1px;flex-shrink:0;min-width:110px;">
+    <div style="font-size:28px;line-height:1;margin-bottom:2px;">🎱</div>
+    <div style="font-family:Impact,'Arial Black',Arial,sans-serif;font-size:18px;font-weight:900;color:#0D1F3C;letter-spacing:3px;">BINGO</div>
+    <div style="font-size:11px;font-weight:700;color:#E8A000;font-style:italic;">Boa sorte! ♡</div>
   </div>
 </div>
 
@@ -137,18 +120,19 @@ function renderPreview(template, dados) {
   const { numero, rows, premio, imagePreview, data, horario, local, valor } = dados
 
   const tabelaHTML = rows.map(row =>
-    `<tr>${row.map(cell =>
-      `<td class="${cell.free ? 'td td-free' : 'td'}">${cell.free ? '★' : cell.value}</td>`
-    ).join('')}</tr>`
+    `<tr>${row.map((cell, ci) => {
+      const isGold = ci === 1 || ci === 3
+      return `<td class="${cell.free ? 'td td-free' : 'td'}">${cell.free ? '✦' : cell.value}</td>`
+    }).join('')}</tr>`
   ).join('')
 
   const imgHtml = imagePreview
-    ? `<img class="prize-img" src="${imagePreview}" />`
-    : `<div style="font-size:44px;padding:6px 0;line-height:1;">🎁</div>`
+    ? `<img src="${imagePreview}" style="height:38px;max-width:120px;object-fit:contain;display:inline-block;vertical-align:middle;margin-right:8px;" />`
+    : ''
 
   return template
     .replace(/{{NUMERO}}/g, String(numero).padStart(4, '0'))
-    .replace(/{{PREMIO}}/g, premio || 'Prêmio')
+    .replace(/{{PREMIO}}/g, premio || 'A definir')
     .replace(/{{DATA}}/g, data ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR') : '__/__/____')
     .replace(/{{HORARIO}}/g, horario || '--:--')
     .replace(/{{LOCAL}}/g, local || '—')
@@ -173,7 +157,7 @@ export default function TemplatePage() {
     imagePreview: null,
     data: new Date().toISOString().split('T')[0],
     horario: '19:00',
-    local: 'Clube Recreativo',
+    local: 'Clube Recreativo Central',
     valor: 'R$ 10,00',
   }
 
@@ -187,7 +171,6 @@ export default function TemplatePage() {
     load()
   }, [])
 
-  // Fix: usa blob URL em vez de srcdoc para evitar erro de sandbox
   useEffect(() => {
     if (tab !== 'preview' || !iframeRef.current) return
     const rendered = renderPreview(html, previewData)
@@ -202,93 +185,77 @@ export default function TemplatePage() {
     try {
       await setDoc(DOC_REF, { html, updatedAt: new Date() })
       setSaved(true)
-      toast.success('Template salvo! Será usado na próxima geração de PDF.')
+      toast.success('Template salvo!')
       setTimeout(() => setSaved(false), 3000)
     } catch { toast.error('Erro ao salvar template.') }
     finally { setSaving(false) }
   }
 
   const handleReset = () => {
-    if (!confirm('Restaurar o template padrão? O conteúdo atual será perdido.')) return
+    if (!confirm('Restaurar o template padrão?')) return
     setHtml(DEFAULT_TEMPLATE)
     toast.success('Template restaurado.')
   }
 
-  const copyVar = (v) => {
-    navigator.clipboard.writeText(v).then(() => toast.success(`${v} copiado!`))
-  }
+  const copyVar = (v) => navigator.clipboard.writeText(v).then(() => toast.success(`${v} copiado!`))
 
   return (
     <Layout>
       <div className="flex-1 flex flex-col min-h-0">
-        {/* Header */}
         <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-black text-gray-800 flex items-center gap-2">
-              <Code2 size={20} className="text-[#0B2E5E]" /> Editor de Template
+              <Code2 size={20} className="text-[#0D1F3C]" /> Editor de Template
             </h1>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Edite o HTML/CSS da cartela. Clique nas variáveis abaixo para copiar.
-            </p>
+            <p className="text-xs text-gray-500 mt-0.5">Edite o HTML/CSS. Clique nas variáveis para copiar.</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handleReset}
-              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+            <button onClick={handleReset} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
               <RefreshCw size={14} /> Restaurar padrão
             </button>
-            <button onClick={handleSave} disabled={saving}
-              className="flex items-center gap-2 bg-[#0B2E5E] hover:bg-[#0a2550] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-60">
+            <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 bg-[#0D1F3C] hover:bg-[#162E58] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-60">
               {saved ? <CheckCircle size={15} /> : <Save size={15} />}
               {saved ? 'Salvo!' : saving ? 'Salvando…' : 'Salvar template'}
             </button>
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="bg-white border-b border-gray-200 px-6 flex gap-1 items-center">
           {[{ key: 'editor', label: '📝 Editor HTML/CSS' }, { key: 'preview', label: '👁 Preview A4' }].map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
-                tab === t.key ? 'border-[#0B2E5E] text-[#0B2E5E]' : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}>
+              className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab === t.key ? 'border-[#0D1F3C] text-[#0D1F3C]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
               {t.label}
             </button>
           ))}
           {tab === 'preview' && (
-            <button onClick={() => setPreviewRows(gerarCartelaPreview())}
-              className="ml-auto flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#0B2E5E] py-2 transition-colors">
+            <button onClick={() => setPreviewRows(gerarCartelaPreview())} className="ml-auto flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#0D1F3C] py-2 transition-colors">
               <RefreshCw size={12} /> Novos números
             </button>
           )}
         </div>
 
-        {/* Content */}
         <div className="flex-1 min-h-0 overflow-hidden">
           {loading ? (
-            <div className="flex items-center justify-center h-full text-gray-400">Carregando template…</div>
+            <div className="flex items-center justify-center h-full text-gray-400">Carregando…</div>
           ) : tab === 'editor' ? (
             <textarea value={html} onChange={e => setHtml(e.target.value)} spellCheck={false}
               className="w-full h-full resize-none font-mono text-sm p-5 bg-gray-950 text-green-400 focus:outline-none"
               style={{ minHeight: 'calc(100vh - 160px)' }} />
           ) : (
-            <div className="flex items-start justify-center bg-gray-300 overflow-auto p-8"
-              style={{ minHeight: 'calc(100vh - 160px)' }}>
+            <div className="flex items-start justify-center bg-gray-300 overflow-auto p-8" style={{ minHeight: 'calc(100vh - 160px)' }}>
               <div className="shadow-2xl" style={{ width: 794 }}>
-                <iframe ref={iframeRef} title="Preview A4"
-                  style={{ width: 794, height: 1123, border: 'none', display: 'block' }}
-                />
+                <iframe ref={iframeRef} title="Preview A4" style={{ width: 794, height: 1123, border: 'none', display: 'block' }} />
               </div>
             </div>
           )}
         </div>
 
-        {/* Variáveis */}
         {tab === 'editor' && (
-          <div className="bg-gray-900 border-t border-gray-700 px-5 py-2.5 flex gap-4 flex-wrap items-center">
-            <span className="text-xs text-gray-500 shrink-0">Clique para copiar →</span>
+          <div className="bg-gray-900 border-t border-gray-700 px-5 py-2.5 flex gap-3 flex-wrap items-center">
+            <span className="text-xs text-gray-500 shrink-0">Variáveis:</span>
             {['{{NUMERO}}','{{PREMIO}}','{{DATA}}','{{HORARIO}}','{{LOCAL}}','{{VALOR}}','{{IMAGEM_PREMIO}}','{{TABELA}}'].map(v => (
               <code key={v} onClick={() => copyVar(v)}
-                className="text-xs text-yellow-300 font-mono cursor-pointer hover:text-white hover:bg-yellow-600 px-1.5 py-0.5 rounded transition-colors">
+                className="text-xs text-yellow-300 font-mono cursor-pointer hover:text-white hover:bg-yellow-700 px-1.5 py-0.5 rounded transition-colors select-none">
                 {v}
               </code>
             ))}
