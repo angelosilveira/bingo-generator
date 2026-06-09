@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { gerarCartelaPreview } from '../utils/bingoGenerator'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/+$/, '')
 
 export default function BingoCardPreview({ form }) {
   const [rows, setRows] = useState(() => gerarCartelaPreview())

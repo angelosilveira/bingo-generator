@@ -3,7 +3,7 @@ import { Save, RefreshCw, Code2, CheckCircle, Trash2 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import Layout from '../components/Layout'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/+$/, '')
 
 const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <html>

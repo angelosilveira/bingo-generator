@@ -7,7 +7,7 @@ import { displayCurrency } from '../utils/currency'
 import { toast } from 'react-hot-toast'
 import Layout from '../components/Layout'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/+$/, '')
 
 export default function DashboardPage() {
   const [bingos, setBingos] = useState([])

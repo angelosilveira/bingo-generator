@@ -8,7 +8,7 @@ import Layout from '../components/Layout'
 import { formatCurrency } from '../utils/currency'
 import BingoCardPreview from '../components/BingoCardPreview'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/+$/, '')
 
 export default function NewBingoPage() {
   const navigate = useNavigate()
