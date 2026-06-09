@@ -1,425 +1,266 @@
-/**
- * Gera o HTML completo de uma página com uma cartela de bingo.
- * Fiel ao layout da imagem: azul escuro, amarelo, bordas arredondadas, canhoto.
- */
-export function gerarHTMLCartela({
-  numero,
-  rows,
-  premio,
-  premioImageBase64,
-  data,
-  horario,
-  local,
-  valorCartela,
-}) {
+export function gerarHTMLCartela({ numero, rows, premio, premioImageBase64, data, horario, local, valorCartela }) {
+  const numFormatado = String(numero).padStart(4, '0')
   const dataFormatada = data
     ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')
     : '__/__/____'
 
-  const numFormatado = String(numero).padStart(4, '0')
+  const COLS = ['B', 'I', 'N', 'G', 'O']
+  const COL_BG = ['#1a3a6b', '#f5a623', '#1a3a6b', '#f5a623', '#1a3a6b']
 
-  const cellsHTML = rows
-    .map((row) =>
-      row
-        .map((cell) =>
-          cell.free
-            ? `<td class="cell free"><span>🎁</span></td>`
-            : `<td class="cell">${cell.value}</td>`
-        )
-        .join('')
-    )
-    .join('</tr><tr>')
+  const thCells = COLS.map((c, i) => `
+    <td style="
+      background:${COL_BG[i]};
+      color:#fff;
+      font-family:'Arial Black',Arial,sans-serif;
+      font-size:26px;
+      font-weight:900;
+      text-align:center;
+      padding:10px 0;
+      border-radius:8px;
+      width:20%;
+    ">${c}</td>`).join('')
+
+  const bodyRows = rows.map(row => {
+    const cells = row.map(cell => `
+      <td style="
+        background:#fff;
+        font-family:'Arial Black',Arial,sans-serif;
+        font-size:${cell.free ? '24px' : '26px'};
+        font-weight:900;
+        text-align:center;
+        padding:10px 0;
+        border-radius:8px;
+        color:#111;
+        height:52px;
+      ">${cell.free ? '🎁' : cell.value}</td>`).join('')
+    return `<tr>${cells}</tr>`
+  }).join('')
+
+  const premioImg = premioImageBase64
+    ? `<img src="${premioImageBase64}" style="width:100%;max-height:90px;object-fit:contain;border-radius:8px;display:block;margin:0 auto;" />`
+    : `<div style="font-size:36px;text-align:center;padding:8px 0;">🎁</div>`
 
   return `<!DOCTYPE html>
-<html lang="pt-BR">
+<html>
 <head>
 <meta charset="UTF-8"/>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
-    font-family: 'Arial Black', Arial, sans-serif;
-    background: #e8f0fe;
-    width: 794px;
-    min-height: 1123px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
+    width:794px;
+    min-height:1050px;
+    background:#e8f0fe;
+    font-family:'Arial Black',Arial,sans-serif;
+    padding:20px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
   }
-
-  /* ─── CARTELA PRINCIPAL ─── */
-  .card {
-    background: #dde8fb;
-    border-radius: 24px;
-    padding: 20px;
-    width: 100%;
-    display: flex;
-    gap: 18px;
-    border: 2px solid #b8ccee;
-  }
-
-  /* ─── COLUNA ESQUERDA ─── */
-  .left { flex: 1; }
-
-  /* Título BINGO */
-  .title-wrap {
-    text-align: center;
-    margin-bottom: 8px;
-  }
-  .title {
-    font-size: 72px;
-    font-weight: 900;
-    color: #1a3a6b;
-    text-shadow: 3px 3px 0 #fff, -1px -1px 0 #0a1f45;
-    letter-spacing: 2px;
-    line-height: 1;
-  }
-
-  /* Nº da cartela */
-  .card-num-wrap {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 12px;
-  }
-  .card-num-badge {
-    background: #1a3a6b;
-    color: #fff;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 2px 12px 0;
-    border-radius: 6px 6px 0 0;
-    letter-spacing: 1px;
-  }
-  .card-num-value {
-    background: #fff;
-    border: 2px solid #1a3a6b;
-    border-radius: 0 0 8px 8px;
-    padding: 2px 24px;
-    font-size: 36px;
-    font-weight: 900;
-    color: #e03030;
-    letter-spacing: 2px;
-    text-align: center;
-  }
-
-  /* Tabela */
-  table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 4px;
-  }
-  th {
-    background: #1a3a6b;
-    color: #fff;
-    font-size: 30px;
-    font-weight: 900;
-    padding: 10px 0;
-    border-radius: 8px;
-    text-align: center;
-    width: 20%;
-  }
-  th:nth-child(2), th:nth-child(4) {
-    background: #f5a623;
-  }
-  td.cell {
-    background: #fff;
-    font-size: 28px;
-    font-weight: 900;
-    text-align: center;
-    padding: 10px 0;
-    border-radius: 8px;
-    color: #111;
-    height: 56px;
-  }
-  td.cell.free {
-    font-size: 28px;
-  }
-
-  /* ─── COLUNA DIREITA ─── */
-  .right {
-    width: 200px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .prize-box {
-    border: 2px dashed #1a3a6b;
-    border-radius: 12px;
-    padding: 10px;
-    text-align: center;
-    background: #fff;
-  }
-  .prize-label {
-    background: #1a3a6b;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 900;
-    border-radius: 8px;
-    padding: 3px 0;
-    margin-bottom: 8px;
-    letter-spacing: 1px;
-  }
-  .prize-img {
-    width: 100%;
-    height: 100px;
-    object-fit: contain;
-    border-radius: 8px;
-  }
-  .prize-placeholder {
-    width: 100%;
-    height: 80px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 40px;
-  }
-  .prize-desc {
-    font-size: 10px;
-    color: #555;
-    margin-top: 4px;
-    font-weight: 700;
-  }
-
-  .info-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: #fff;
-    border-radius: 20px;
-    padding: 6px 10px;
-    border: 2px solid #1a3a6b;
-  }
-  .info-icon {
-    background: #1a3a6b;
-    color: #fff;
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    flex-shrink: 0;
-  }
-  .info-content { flex: 1; min-width: 0; }
-  .info-label {
-    font-size: 9px;
-    font-weight: 900;
-    color: #f5a623;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-  }
-  .info-value {
-    font-size: 11px;
-    font-weight: 700;
-    color: #1a3a6b;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .valor-box {
-    background: #1a3a6b;
-    border-radius: 12px;
-    padding: 8px;
-    text-align: center;
-    margin-top: auto;
-  }
-  .valor-label {
-    color: #fff;
-    font-size: 10px;
-    font-weight: 900;
-    letter-spacing: 1px;
-  }
-  .valor-value {
-    background: #f5a623;
-    color: #fff;
-    font-size: 26px;
-    font-weight: 900;
-    border-radius: 8px;
-    padding: 2px 0;
-    margin-top: 4px;
-    text-shadow: 1px 1px 0 rgba(0,0,0,.2);
-  }
-
-  /* ─── CANHOTO ─── */
-  .scissor-line {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 10px 0 6px;
-    color: #888;
-  }
-  .scissor-line::before, .scissor-line::after {
-    content: '';
-    flex: 1;
-    border-top: 2px dashed #aaa;
-  }
-
-  .stub {
-    width: 100%;
-    background: #fff;
-    border-radius: 16px;
-    border: 2px solid #dde8fb;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 12px 16px;
-  }
-  .stub-tag {
-    background: #1a3a6b;
-    color: #fff;
-    font-size: 11px;
-    font-weight: 900;
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-    transform: rotate(180deg);
-    padding: 10px 6px;
-    border-radius: 8px;
-    letter-spacing: 2px;
-  }
-  .stub-fields { flex: 1; }
-  .stub-num {
-    font-size: 14px;
-    font-weight: 900;
-    color: #1a3a6b;
-    margin-bottom: 4px;
-  }
-  .stub-num span { color: #e03030; }
-  .stub-line {
-    font-size: 11px;
-    color: #555;
-    margin-bottom: 4px;
-    display: flex;
-    gap: 6px;
-  }
-  .stub-line-label { font-weight: 700; white-space: nowrap; }
-  .stub-line-field {
-    flex: 1;
-    border-bottom: 1px solid #999;
-    min-width: 60px;
-  }
-  .stub-logo {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    color: #1a3a6b;
-    font-size: 22px;
-    font-weight: 900;
-    gap: 2px;
-  }
-  .stub-logo-sub {
-    font-size: 13px;
-    color: #f5a623;
-    font-style: italic;
-  }
+  table { border-collapse:separate; border-spacing:4px; width:100%; }
 </style>
 </head>
 <body>
 
-<!-- ═══ CARTELA ═══ -->
-<div class="card">
-  <!-- Esquerda -->
-  <div class="left">
-    <div class="title-wrap">
-      <div class="title">BINGO</div>
+<!-- CARTELA PRINCIPAL -->
+<div style="
+  background:#dde8fb;
+  border-radius:20px;
+  border:2px solid #b8ccee;
+  padding:18px;
+  display:flex;
+  gap:16px;
+">
+
+  <!-- ESQUERDA -->
+  <div style="flex:1;min-width:0;">
+
+    <!-- Título BINGO -->
+    <div style="text-align:center;margin-bottom:6px;">
+      <span style="
+        font-family:'Arial Black',Arial,sans-serif;
+        font-size:64px;
+        font-weight:900;
+        color:#1a3a6b;
+        text-shadow:3px 3px 0 #fff,-1px -1px 0 #0a1f45;
+        letter-spacing:2px;
+        line-height:1;
+      ">BINGO</span>
     </div>
 
-    <div class="card-num-wrap">
+    <!-- Nº Cartela -->
+    <div style="display:flex;justify-content:center;margin-bottom:10px;">
       <div>
-        <div class="card-num-badge">Nº DA CARTELA</div>
-        <div class="card-num-value">${numFormatado}</div>
+        <div style="
+          background:#1a3a6b;
+          color:#fff;
+          font-size:10px;
+          font-weight:900;
+          padding:2px 12px;
+          border-radius:6px 6px 0 0;
+          text-align:center;
+          letter-spacing:1px;
+          font-family:Arial,sans-serif;
+        ">Nº DA CARTELA</div>
+        <div style="
+          background:#fff;
+          border:2px solid #1a3a6b;
+          border-radius:0 0 8px 8px;
+          padding:2px 20px;
+          font-size:32px;
+          font-weight:900;
+          color:#e03030;
+          letter-spacing:2px;
+          text-align:center;
+          font-family:'Arial Black',Arial,sans-serif;
+        ">${numFormatado}</div>
       </div>
     </div>
 
+    <!-- Tabela BINGO -->
     <table>
       <thead>
-        <tr>
-          <th>B</th><th>I</th><th>N</th><th>G</th><th>O</th>
-        </tr>
+        <tr style="border-spacing:4px;">${thCells}</tr>
       </thead>
-      <tbody>
-        <tr>${cellsHTML}</tr>
-      </tbody>
+      <tbody>${bodyRows}</tbody>
     </table>
+
   </div>
 
-  <!-- Direita -->
-  <div class="right">
+  <!-- DIREITA -->
+  <div style="width:190px;display:flex;flex-direction:column;gap:8px;">
+
     <!-- Prêmio -->
-    <div class="prize-box">
-      <div class="prize-label">PRÊMIO</div>
-      ${
-        premioImageBase64
-          ? `<img class="prize-img" src="${premioImageBase64}" alt="${premio}" />`
-          : `<div class="prize-placeholder">🎁</div>`
-      }
-      ${premio ? `<div class="prize-desc">${premio}</div>` : ''}
+    <div style="
+      border:2px dashed #1a3a6b;
+      border-radius:12px;
+      padding:8px;
+      background:#fff;
+      text-align:center;
+    ">
+      <div style="
+        background:#1a3a6b;
+        color:#fff;
+        font-size:11px;
+        font-weight:900;
+        border-radius:6px;
+        padding:3px 0;
+        margin-bottom:6px;
+        letter-spacing:1px;
+        font-family:Arial,sans-serif;
+      ">PRÊMIO</div>
+      ${premioImg}
+      ${premio ? `<div style="font-size:10px;color:#555;margin-top:4px;font-weight:700;font-family:Arial,sans-serif;">${premio}</div>` : ''}
     </div>
 
     <!-- Data -->
-    <div class="info-row">
-      <div class="info-icon">📅</div>
-      <div class="info-content">
-        <div class="info-label">DATA</div>
-        <div class="info-value">${dataFormatada}</div>
+    <div style="
+      display:flex;align-items:center;gap:6px;
+      background:#fff;border-radius:20px;
+      padding:5px 8px;border:2px solid #1a3a6b;
+    ">
+      <div style="background:#1a3a6b;color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">📅</div>
+      <div>
+        <div style="font-size:8px;font-weight:900;color:#f5a623;letter-spacing:1px;font-family:Arial,sans-serif;">DATA</div>
+        <div style="font-size:11px;font-weight:700;color:#1a3a6b;font-family:Arial,sans-serif;">${dataFormatada}</div>
       </div>
     </div>
 
     <!-- Horário -->
-    <div class="info-row">
-      <div class="info-icon">🕐</div>
-      <div class="info-content">
-        <div class="info-label">HORÁRIO</div>
-        <div class="info-value">${horario || '--:--'}</div>
+    <div style="
+      display:flex;align-items:center;gap:6px;
+      background:#fff;border-radius:20px;
+      padding:5px 8px;border:2px solid #1a3a6b;
+    ">
+      <div style="background:#1a3a6b;color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">🕐</div>
+      <div>
+        <div style="font-size:8px;font-weight:900;color:#f5a623;letter-spacing:1px;font-family:Arial,sans-serif;">HORÁRIO</div>
+        <div style="font-size:11px;font-weight:700;color:#1a3a6b;font-family:Arial,sans-serif;">${horario || '--:--'}</div>
       </div>
     </div>
 
     <!-- Local -->
-    <div class="info-row">
-      <div class="info-icon">📍</div>
-      <div class="info-content">
-        <div class="info-label">LOCAL</div>
-        <div class="info-value">${local}</div>
+    <div style="
+      display:flex;align-items:center;gap:6px;
+      background:#fff;border-radius:20px;
+      padding:5px 8px;border:2px solid #1a3a6b;
+    ">
+      <div style="background:#1a3a6b;color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">📍</div>
+      <div style="min-width:0;">
+        <div style="font-size:8px;font-weight:900;color:#f5a623;letter-spacing:1px;font-family:Arial,sans-serif;">LOCAL</div>
+        <div style="font-size:11px;font-weight:700;color:#1a3a6b;font-family:Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;">${local}</div>
       </div>
     </div>
 
     <!-- Valor -->
-    <div class="valor-box">
-      <div class="valor-label">VALOR DA CARTELA</div>
-      <div class="valor-value">${valorCartela}</div>
+    <div style="
+      background:#1a3a6b;
+      border-radius:12px;
+      padding:8px;
+      text-align:center;
+      margin-top:auto;
+    ">
+      <div style="color:#fff;font-size:9px;font-weight:900;letter-spacing:1px;font-family:Arial,sans-serif;">VALOR DA CARTELA</div>
+      <div style="
+        background:#f5a623;
+        color:#fff;
+        font-size:24px;
+        font-weight:900;
+        border-radius:8px;
+        padding:2px 0;
+        margin-top:4px;
+        font-family:'Arial Black',Arial,sans-serif;
+        text-shadow:1px 1px 0 rgba(0,0,0,.2);
+      ">${valorCartela}</div>
     </div>
+
   </div>
 </div>
 
-<!-- ═══ LINHA CANHOTO ═══ -->
-<div class="scissor-line">✂</div>
+<!-- LINHA TESOURA -->
+<div style="display:flex;align-items:center;gap:8px;color:#999;margin:2px 0;">
+  <div style="flex:1;border-top:2px dashed #bbb;"></div>
+  <span style="font-size:16px;">✂</span>
+  <div style="flex:1;border-top:2px dashed #bbb;"></div>
+</div>
 
-<!-- ═══ CANHOTO ═══ -->
-<div class="stub">
-  <div class="stub-tag">CANHOTO</div>
-  <div class="stub-fields">
-    <div class="stub-num">Nº DA CARTELA: <span>${numFormatado}</span></div>
-    <div class="stub-line">
-      <span class="stub-line-label">NOME:</span>
-      <span class="stub-line-field"></span>
+<!-- CANHOTO -->
+<div style="
+  background:#fff;
+  border-radius:14px;
+  border:2px solid #dde8fb;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:10px 14px;
+">
+  <div style="
+    background:#1a3a6b;
+    color:#fff;
+    font-size:10px;
+    font-weight:900;
+    writing-mode:vertical-rl;
+    transform:rotate(180deg);
+    padding:10px 6px;
+    border-radius:8px;
+    letter-spacing:2px;
+    font-family:Arial,sans-serif;
+  ">CANHOTO</div>
+
+  <div style="flex:1;">
+    <div style="font-size:13px;font-weight:900;color:#1a3a6b;margin-bottom:5px;font-family:'Arial Black',Arial,sans-serif;">
+      Nº DA CARTELA: <span style="color:#e03030;">${numFormatado}</span>
     </div>
-    <div class="stub-line">
-      <span class="stub-line-label">TELEFONE:</span>
-      <span class="stub-line-field"></span>
-    </div>
-    <div class="stub-line">
-      <span class="stub-line-label">ENDEREÇO:</span>
-      <span class="stub-line-field"></span>
-    </div>
+    ${['NOME','TELEFONE','ENDEREÇO'].map(f => `
+    <div style="display:flex;gap:6px;align-items:flex-end;margin-bottom:4px;font-size:11px;font-family:Arial,sans-serif;">
+      <span style="font-weight:700;white-space:nowrap;color:#333;">${f}:</span>
+      <span style="flex:1;border-bottom:1px solid #999;"></span>
+    </div>`).join('')}
   </div>
-  <div class="stub-logo">
-    🎱
-    <div style="font-size:20px;color:#1a3a6b;font-weight:900;">BINGO</div>
-    <div class="stub-logo-sub">Boa sorte! ♡</div>
+
+  <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
+    <span style="font-size:28px;">🎱</span>
+    <span style="font-size:18px;font-weight:900;color:#1a3a6b;font-family:'Arial Black',Arial,sans-serif;">BINGO</span>
+    <span style="font-size:12px;font-weight:700;color:#f5a623;font-style:italic;font-family:Arial,sans-serif;">Boa sorte! ♡</span>
   </div>
 </div>
 
