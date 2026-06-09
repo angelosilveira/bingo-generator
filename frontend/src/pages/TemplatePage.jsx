@@ -39,7 +39,7 @@ const DEFAULT_TEMPLATE = `<!DOCTYPE html>
     <div style="flex:1;background:#fff;border:2px solid #0D1F3C;border-radius:10px;overflow:hidden;display:flex;align-items:stretch;">
       <div style="background:#E8A000;color:#0D1F3C;font-size:10px;font-weight:900;writing-mode:vertical-rl;transform:rotate(180deg);padding:10px 7px;letter-spacing:3px;text-transform:uppercase;flex-shrink:0;display:flex;align-items:center;justify-content:center;">PRÊMIO</div>
       <div style="flex:1;display:flex;align-items:center;padding:8px 14px;gap:14px;min-width:0;">
-        <div style="flex-shrink:0;width:64px;height:64px;display:flex;align-items:center;justify-content:center;">{{IMAGEM_PREMIO}}</div>
+        <div style="flex-shrink:0;width:64px;height:64px;display:flex;align-items:center;justify-content:center;">{{QR_CODE}}</div>
         <div style="min-width:0;">
           <div style="font-family:Impact,'Arial Black',Arial,sans-serif;font-size:22px;font-weight:900;color:#0D1F3C;line-height:1.1;word-break:break-word;">{{PREMIO}}</div>
           <div style="font-size:11px;color:#888;font-weight:600;margin-top:3px;font-style:italic;">Prêmio principal do evento</div>
@@ -282,7 +282,7 @@ export default function TemplatePage() {
         {tab === 'editor' && (
           <div className="bg-gray-900 border-t border-gray-700 px-5 py-2.5 flex gap-3 flex-wrap items-center">
             <span className="text-xs text-gray-500 shrink-0">Variáveis:</span>
-            {['{{NUMERO}}','{{PREMIO}}','{{DATA}}','{{HORARIO}}','{{LOCAL}}','{{VALOR}}','{{IMAGEM_PREMIO}}','{{TABELA}}'].map(v => (
+            {['{{NUMERO}}','{{PREMIO}}','{{DATA}}','{{HORARIO}}','{{LOCAL}}','{{VALOR}}','{{QR_CODE}}','{{TABELA}}'].map(v => (
               <code key={v} onClick={() => copyVar(v)}
                 className="text-xs text-yellow-300 font-mono cursor-pointer hover:text-white hover:bg-yellow-700 px-1.5 py-0.5 rounded transition-colors select-none">
                 {v}

@@ -2,28 +2,23 @@ import express from 'express'
 import { db } from '../services/firebase.js'
 import { gerarCartela } from '../services/bingoGenerator.js'
 import { gerarHTMLCartela } from '../templates/cartela.js'
+import { gerarQRCode } from '../services/qrService.js'
 
 const router = express.Router()
 
-// GET /api/template — busca o template salvo
 router.get('/', async (req, res) => {
   try {
     const snap = await db.collection('config').doc('template').get()
-    if (snap.exists && snap.data().html) {
-      return res.json({ html: snap.data().html })
-    }
+    if (snap.exists && snap.data().html) return res.json({ html: snap.data().html })
     res.json({ html: null })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
-// POST /api/template — salva o template
 router.post('/', async (req, res) => {
   const { html } = req.body
-  if (!html || typeof html !== 'string') {
-    return res.status(400).json({ error: 'Campo html é obrigatório.' })
-  }
+  if (!html || typeof html !== 'string') return res.status(400).json({ error: 'html obrigatório' })
   try {
     await db.collection('config').doc('template').set({ html, updatedAt: new Date() })
     res.json({ ok: true })
@@ -32,15 +27,16 @@ router.post('/', async (req, res) => {
   }
 })
 
-// POST /api/template/preview
-// Aceita { html } (template customizado) OU dados do form para usar template salvo/padrão
 router.post('/preview', async (req, res) => {
-  const { html, premio, data, horario, local, valorCartela, premioImageBase64 } = req.body
+  const { html, premio, data, horario, local, valorCartela, premioQrLink } = req.body
 
   const rows = gerarCartela()
   const dataFormatada = data
     ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')
     : new Date().toLocaleDateString('pt-BR')
+
+  // Gera QR code real se vier URL
+  const premioQrUrl = await gerarQRCode(premioQrLink)
 
   const tabelaHTML = rows.map(row =>
     `<tr>${row.map(cell =>
@@ -48,27 +44,26 @@ router.post('/preview', async (req, res) => {
     ).join('')}</tr>`
   ).join('')
 
-  const imgHtml = premioImageBase64
-    ? `<img src="${premioImageBase64}" style="height:52px;max-width:100%;object-fit:contain;display:block;margin:0 auto 4px;" />`
-    : `<div style="font-size:42px;text-align:center;line-height:1;margin-bottom:4px;">🎁</div>`
+  const qrBlock = premioQrUrl
+    ? `<img src="${premioQrUrl}" style="width:90px;height:90px;display:block;margin:0 auto 6px;" />`
+    : `<div style="width:90px;height:90px;margin:0 auto 6px;background:#f0f0f0;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;border-radius:6px;"><div style="font-size:10px;color:#999;text-align:center;line-height:1.3;padding:4px;">QR CODE<br>do prêmio</div></div>`
 
-  // Se veio HTML customizado no body, usa ele
+  const substitute = (tmpl) => tmpl
+    .replace(/{{NUMERO}}/g, '0001')
+    .replace(/{{PREMIO}}/g, premio || 'Smart TV 55" Samsung')
+    .replace(/{{DATA}}/g, dataFormatada)
+    .replace(/{{HORARIO}}/g, horario || '19:00')
+    .replace(/{{LOCAL}}/g, local || 'Clube Recreativo Central')
+    .replace(/{{VALOR}}/g, valorCartela || 'R$ 10,00')
+    .replace(/{{QR_CODE}}/g, qrBlock)
+    .replace(/{{TABELA}}/g, tabelaHTML)
+
+  // Prioridade: body html → salvo no Firestore → padrão
   if (html) {
-    const rendered = html
-      .replace(/{{NUMERO}}/g, '0001')
-      .replace(/{{PREMIO}}/g, premio || 'Smart TV 55" Samsung')
-      .replace(/{{DATA}}/g, dataFormatada)
-      .replace(/{{HORARIO}}/g, horario || '19:00')
-      .replace(/{{LOCAL}}/g, local || 'Clube Recreativo Central')
-      .replace(/{{VALOR}}/g, valorCartela || 'R$ 10,00')
-      .replace(/{{IMAGEM_PREMIO}}/g, imgHtml)
-      .replace(/{{TABELA}}/g, tabelaHTML)
-
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    return res.send(rendered)
+    return res.send(substitute(html))
   }
 
-  // Tenta buscar template salvo no Firestore
   let savedHtml = null
   try {
     const snap = await db.collection('config').doc('template').get()
@@ -76,34 +71,17 @@ router.post('/preview', async (req, res) => {
   } catch {}
 
   if (savedHtml) {
-    const rendered = savedHtml
-      .replace(/{{NUMERO}}/g, '0001')
-      .replace(/{{PREMIO}}/g, premio || 'Smart TV 55" Samsung')
-      .replace(/{{DATA}}/g, dataFormatada)
-      .replace(/{{HORARIO}}/g, horario || '19:00')
-      .replace(/{{LOCAL}}/g, local || 'Clube Recreativo Central')
-      .replace(/{{VALOR}}/g, valorCartela || 'R$ 10,00')
-      .replace(/{{IMAGEM_PREMIO}}/g, imgHtml)
-      .replace(/{{TABELA}}/g, tabelaHTML)
-
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    return res.send(rendered)
+    return res.send(substitute(savedHtml))
   }
 
   // Fallback: template padrão do sistema
-  const fallbackHtml = gerarHTMLCartela({
-    numero: 1,
-    rows,
-    premio: premio || 'Smart TV 55" Samsung',
-    premioImageBase64: premioImageBase64 || null,
-    data: data || new Date().toISOString().split('T')[0],
-    horario: horario || '19:00',
-    local: local || 'Clube Recreativo Central',
-    valorCartela: valorCartela || 'R$ 10,00',
+  const fallback = gerarHTMLCartela({
+    numero: 1, rows, premio: premio || 'Smart TV 55" Samsung',
+    premioQrUrl, data, horario, local, valorCartela,
   })
-
   res.setHeader('Content-Type', 'text/html; charset=utf-8')
-  res.send(fallbackHtml)
+  res.send(fallback)
 })
 
 export default router

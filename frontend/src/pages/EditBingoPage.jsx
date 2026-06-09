@@ -63,6 +63,7 @@ export default function EditBingoPage() {
           horario: d.horario || '',
           local: d.local || '',
           valorCartela: d.valorCartela || '',
+          premioQrLink: d.premioQrLink || '',
           quantidadeCartelas: 100,
           cartelajInicio: (d.totalCartelas || d.quantidadeCartelas || 0) + 1,
         })
@@ -113,7 +114,7 @@ export default function EditBingoPage() {
         horario: form.horario,
         local: form.local,
         valorCartela: form.valorCartela,
-        premioImageBase64,
+        premioQrLink,
         status: 'processing',
         totalCartelas: cartelaFim,
         updatedAt: new Date(),
@@ -129,7 +130,7 @@ export default function EditBingoPage() {
           ...form,
           quantidadeCartelas: Number(form.quantidadeCartelas),
           cartelajInicio: Number(form.cartelajInicio),
-          premioImageBase64,
+          premioQrLink,
         }),
       })
 

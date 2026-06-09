@@ -4,7 +4,7 @@ import { gerarCartelaPreview } from '../utils/bingoGenerator'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
-export default function BingoCardPreview({ form, imagePreview }) {
+export default function BingoCardPreview({ form }) {
   const [rows, setRows] = useState(() => gerarCartelaPreview())
   const [srcdoc, setSrcdoc] = useState('')
   const [loading, setLoading] = useState(true)
@@ -35,7 +35,7 @@ export default function BingoCardPreview({ form, imagePreview }) {
       horario: form.horario || '',
       local: form.local || '',
       valorCartela: form.valorCartela || '',
-      premioImageBase64: imagePreview || null,
+      premioQrLink: form.premioQrLink || null,
     }
 
     fetch(`${API_URL}/api/template/preview`, {
@@ -55,7 +55,8 @@ export default function BingoCardPreview({ form, imagePreview }) {
     form.horario,
     form.local,
     form.valorCartela,
-    imagePreview,
+    form.premioQrLink,
+
     rows,
   ])
 
