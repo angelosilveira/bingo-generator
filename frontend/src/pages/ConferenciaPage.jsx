@@ -40,7 +40,7 @@ export default function ConferenciaPage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#F2F5FA', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100dvh', background: '#F2F5FA', display: 'flex', flexDirection: 'column', WebkitTapHighlightColor: 'transparent' }}>
 
       {/* ── HEADER ── */}
       <header style={{
@@ -150,7 +150,7 @@ export default function ConferenciaPage() {
                 const ordem = isSorteado ? sorteados.indexOf(n) + 1 : null
 
                 return (
-                  <div key={n} onClick={() => toggleNumero(n)}
+                  <div key={n} onClick={() => toggleNumero(n)} onTouchEnd={e => { e.preventDefault(); toggleNumero(n) }} tabIndex={-1}
                     style={{
                       aspectRatio: '1/1',
                       borderRadius: 8,
