@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
-import { db } from '../services/firebase'
-import { Save, RefreshCw, Code2, CheckCircle } from 'lucide-react'
+import { Save, RefreshCw, Code2, CheckCircle, ExternalLink } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import Layout from '../components/Layout'
 import { gerarCartelaPreview } from '../utils/bingoGenerator'
 
-const DOC_REF = doc(db, 'config', 'template')
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <html>
@@ -29,37 +27,26 @@ const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 
 <!-- HEADER: BINGO + Nº + PRÊMIO -->
 <div style="display:flex;gap:12px;margin-bottom:12px;flex-shrink:0;align-items:stretch;">
-
-  <!-- BINGO -->
   <div style="background:linear-gradient(135deg,#0D1F3C 0%,#182E50 60%,#0D1F3C 100%);border-radius:12px;padding:14px 24px 12px;flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;">
     <div style="position:absolute;inset:0;background:repeating-linear-gradient(-55deg,transparent,transparent 16px,rgba(232,160,0,.07) 16px,rgba(232,160,0,.07) 32px);pointer-events:none;"></div>
     <div style="font-family:Impact,'Arial Black',Arial,sans-serif;font-size:82px;line-height:.95;color:#E8A000;letter-spacing:8px;text-shadow:0 4px 20px rgba(0,0,0,.5),3px 3px 0 rgba(0,0,0,.35);position:relative;">BINGO</div>
     <div style="height:3px;background:linear-gradient(90deg,#E8A000 40%,transparent);margin-top:6px;border-radius:2px;"></div>
   </div>
-
-  <!-- Nº + Prêmio -->
   <div style="flex:1;display:flex;flex-direction:column;gap:10px;">
-
-    <!-- Nº compacto -->
     <div style="display:flex;align-items:center;background:#fff;border:2px solid #0D1F3C;border-radius:8px;overflow:hidden;height:44px;">
       <div style="background:#0D1F3C;color:#E8A000;font-size:10px;font-weight:900;letter-spacing:1.5px;padding:0 12px;height:100%;display:flex;align-items:center;white-space:nowrap;text-transform:uppercase;">Nº DA CARTELA</div>
       <div style="flex:1;font-family:Impact,'Arial Black',Arial,sans-serif;font-size:26px;font-weight:900;color:#C0392B;letter-spacing:3px;text-align:center;padding:0 12px;">{{NUMERO}}</div>
     </div>
-
-    <!-- PRÊMIO em destaque -->
     <div style="flex:1;background:#fff;border:2px solid #0D1F3C;border-radius:10px;overflow:hidden;display:flex;align-items:stretch;">
       <div style="background:#E8A000;color:#0D1F3C;font-size:10px;font-weight:900;writing-mode:vertical-rl;transform:rotate(180deg);padding:10px 7px;letter-spacing:3px;text-transform:uppercase;flex-shrink:0;display:flex;align-items:center;justify-content:center;">PRÊMIO</div>
       <div style="flex:1;display:flex;align-items:center;padding:8px 14px;gap:14px;min-width:0;">
-        <div style="flex-shrink:0;width:64px;height:64px;display:flex;align-items:center;justify-content:center;">
-          {{IMAGEM_PREMIO}}
-        </div>
+        <div style="flex-shrink:0;width:64px;height:64px;display:flex;align-items:center;justify-content:center;">{{IMAGEM_PREMIO}}</div>
         <div style="min-width:0;">
           <div style="font-family:Impact,'Arial Black',Arial,sans-serif;font-size:22px;font-weight:900;color:#0D1F3C;line-height:1.1;word-break:break-word;">{{PREMIO}}</div>
           <div style="font-size:11px;color:#888;font-weight:600;margin-top:3px;font-style:italic;">Prêmio principal do evento</div>
         </div>
       </div>
     </div>
-
   </div>
 </div>
 
@@ -127,84 +114,78 @@ const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 </body>
 </html>`
 
-function renderPreview(template, dados) {
-  const { numero, rows, premio, imagePreview, data, horario, local, valor } = dados
-
-  const tabelaHTML = rows.map(row =>
-    `<tr>${row.map(cell =>
-      `<td class="${cell.free ? 'td td-free' : 'td'}">${cell.free ? '✦' : cell.value}</td>`
-    ).join('')}</tr>`
-  ).join('')
-
-  const imgHtml = imagePreview
-    ? `<img class="prize-img" src="${imagePreview}" />`
-    : `<div style="font-size:42px;text-align:center;line-height:1;">🎁</div>`
-
-  return template
-    .replace(/{{NUMERO}}/g, String(numero).padStart(4, '0'))
-    .replace(/{{PREMIO}}/g, premio || 'A DEFINIR')
-    .replace(/{{DATA}}/g, data ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR') : '__/__/____')
-    .replace(/{{HORARIO}}/g, horario || '--:--')
-    .replace(/{{LOCAL}}/g, local || '—')
-    .replace(/{{VALOR}}/g, valor || 'R$ —')
-    .replace(/{{IMAGEM_PREMIO}}/g, imgHtml)
-    .replace(/{{TABELA}}/g, tabelaHTML)
-}
-
 export default function TemplatePage() {
   const iframeRef = useRef(null)
   const [html, setHtml] = useState(DEFAULT_TEMPLATE)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [previewing, setPreviewing] = useState(false)
   const [tab, setTab] = useState('editor')
-  const [previewRows, setPreviewRows] = useState(() => gerarCartelaPreview())
+  const [previewKey, setPreviewKey] = useState(0)
 
-  const previewData = {
-    numero: 1,
-    rows: previewRows,
-    premio: 'Smart TV 55" Samsung',
-    imagePreview: null,
-    data: new Date().toISOString().split('T')[0],
-    horario: '19:00',
-    local: 'Clube Recreativo Central',
-    valor: 'R$ 10,00',
+  // Carrega template salvo via API do backend
+  useEffect(() => {
+    fetch(`${API_URL}/api/template`)
+      .then(r => r.json())
+      .then(d => { if (d.html) setHtml(d.html) })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  // Preview via backend — sem Blob URL, sem iframe sandbox
+  const loadPreview = async () => {
+    if (!iframeRef.current) return
+    setPreviewing(true)
+    try {
+      const res = await fetch(`${API_URL}/api/template/preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html }),
+      })
+      const text = await res.text()
+      // Escreve diretamente no documento do iframe
+      const doc = iframeRef.current.contentDocument || iframeRef.current.contentWindow?.document
+      if (doc) {
+        doc.open()
+        doc.write(text)
+        doc.close()
+      }
+    } catch (err) {
+      toast.error('Erro ao carregar preview.')
+    } finally {
+      setPreviewing(false)
+    }
   }
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const snap = await getDoc(DOC_REF)
-        if (snap.exists() && snap.data().html) setHtml(snap.data().html)
-      } catch { } finally { setLoading(false) }
-    }
-    load()
-  }, [])
-
-  useEffect(() => {
-    if (tab !== 'preview' || !iframeRef.current) return
-    const rendered = renderPreview(html, previewData)
-    const blob = new Blob([rendered], { type: 'text/html' })
-    const url = URL.createObjectURL(blob)
-    iframeRef.current.src = url
-    return () => URL.revokeObjectURL(url)
-  }, [tab, html, previewRows])
+    if (tab === 'preview') loadPreview()
+  }, [tab, previewKey])
 
   const handleSave = async () => {
     setSaving(true)
     try {
-      await setDoc(DOC_REF, { html, updatedAt: new Date() })
+      const res = await fetch(`${API_URL}/api/template`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html }),
+      })
+      if (!res.ok) throw new Error('Falha ao salvar')
       setSaved(true)
-      toast.success('Template salvo!')
+      toast.success('Template salvo! Será usado na próxima geração de PDF.')
       setTimeout(() => setSaved(false), 3000)
-    } catch { toast.error('Erro ao salvar template.') }
-    finally { setSaving(false) }
+    } catch {
+      toast.error('Erro ao salvar template. Verifique se o backend está online.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleReset = () => {
-    if (!confirm('Restaurar o template padrão?')) return
+    if (!confirm('Restaurar o template padrão? O conteúdo atual será perdido.')) return
     setHtml(DEFAULT_TEMPLATE)
     toast.success('Template restaurado.')
+    if (tab === 'preview') setPreviewKey(k => k + 1)
   }
 
   const copyVar = (v) => navigator.clipboard.writeText(v).then(() => toast.success(`${v} copiado!`))
@@ -212,54 +193,89 @@ export default function TemplatePage() {
   return (
     <Layout>
       <div className="flex-1 flex flex-col min-h-0">
+        {/* Header */}
         <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-black text-gray-800 flex items-center gap-2">
               <Code2 size={20} className="text-[#0D1F3C]" /> Editor de Template
             </h1>
-            <p className="text-xs text-gray-500 mt-0.5">Edite o HTML/CSS. Clique nas variáveis para copiar.</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Edite o HTML/CSS. Clique nas variáveis para copiar.
+            </p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handleReset} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+            <button onClick={handleReset}
+              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
               <RefreshCw size={14} /> Restaurar padrão
             </button>
-            <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 bg-[#0D1F3C] hover:bg-[#162E58] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-60">
+            <button onClick={handleSave} disabled={saving}
+              className="flex items-center gap-2 bg-[#0D1F3C] hover:bg-[#162E58] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-60">
               {saved ? <CheckCircle size={15} /> : <Save size={15} />}
               {saved ? 'Salvo!' : saving ? 'Salvando…' : 'Salvar template'}
             </button>
           </div>
         </div>
 
+        {/* Tabs */}
         <div className="bg-white border-b border-gray-200 px-6 flex gap-1 items-center">
-          {[{ key: 'editor', label: '📝 Editor HTML/CSS' }, { key: 'preview', label: '👁 Preview A4' }].map(t => (
+          {[
+            { key: 'editor', label: '📝 Editor HTML/CSS' },
+            { key: 'preview', label: '👁 Preview A4' },
+          ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab === t.key ? 'border-[#0D1F3C] text-[#0D1F3C]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+                tab === t.key ? 'border-[#0D1F3C] text-[#0D1F3C]' : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}>
               {t.label}
             </button>
           ))}
           {tab === 'preview' && (
-            <button onClick={() => setPreviewRows(gerarCartelaPreview())} className="ml-auto flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#0D1F3C] py-2 transition-colors">
-              <RefreshCw size={12} /> Novos números
+            <button onClick={() => setPreviewKey(k => k + 1)}
+              disabled={previewing}
+              className="ml-auto flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#0D1F3C] py-2 transition-colors disabled:opacity-50">
+              <RefreshCw size={12} className={previewing ? 'animate-spin' : ''} />
+              {previewing ? 'Carregando…' : 'Novos números'}
             </button>
           )}
         </div>
 
+        {/* Content */}
         <div className="flex-1 min-h-0 overflow-hidden">
           {loading ? (
-            <div className="flex items-center justify-center h-full text-gray-400">Carregando…</div>
+            <div className="flex items-center justify-center h-full text-gray-400">
+              Carregando template…
+            </div>
           ) : tab === 'editor' ? (
-            <textarea value={html} onChange={e => setHtml(e.target.value)} spellCheck={false}
+            <textarea
+              value={html}
+              onChange={e => setHtml(e.target.value)}
+              spellCheck={false}
               className="w-full h-full resize-none font-mono text-sm p-5 bg-gray-950 text-green-400 focus:outline-none"
-              style={{ minHeight: 'calc(100vh - 160px)' }} />
+              style={{ minHeight: 'calc(100vh - 160px)' }}
+            />
           ) : (
-            <div className="flex items-start justify-center bg-gray-300 overflow-auto p-8" style={{ minHeight: 'calc(100vh - 160px)' }}>
-              <div className="shadow-2xl" style={{ width: 794 }}>
-                <iframe ref={iframeRef} title="Preview A4" style={{ width: 794, height: 1123, border: 'none', display: 'block' }} />
+            <div className="flex items-start justify-center bg-gray-300 overflow-auto p-8"
+              style={{ minHeight: 'calc(100vh - 160px)' }}>
+              <div className="shadow-2xl relative" style={{ width: 794 }}>
+                {previewing && (
+                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10 rounded">
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <RefreshCw size={18} className="animate-spin" />
+                      <span className="text-sm font-medium">Gerando preview…</span>
+                    </div>
+                  </div>
+                )}
+                <iframe
+                  ref={iframeRef}
+                  title="Preview A4"
+                  style={{ width: 794, height: 1123, border: 'none', display: 'block', background: '#F2F5FA' }}
+                />
               </div>
             </div>
           )}
         </div>
 
+        {/* Variáveis */}
         {tab === 'editor' && (
           <div className="bg-gray-900 border-t border-gray-700 px-5 py-2.5 flex gap-3 flex-wrap items-center">
             <span className="text-xs text-gray-500 shrink-0">Variáveis:</span>

@@ -2,6 +2,7 @@ import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import bingoRouter from './routes/bingo.js'
+import templateRouter from './routes/template.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -17,9 +18,7 @@ console.log('✅ CORS origens permitidas:', allowedOrigins)
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Sem origin = Postman/curl, sempre permite
     if (!origin) return callback(null, true)
-
     if (allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
       callback(null, true)
     } else {
@@ -33,6 +32,7 @@ app.use(express.json({ limit: '20mb' }))
 
 app.get('/health', (_, res) => res.json({ ok: true, origins: allowedOrigins }))
 app.use('/api/bingo', bingoRouter)
+app.use('/api/template', templateRouter)
 
 app.listen(PORT, () => {
   console.log(`🎱 Bingo backend rodando em http://localhost:${PORT}`)
