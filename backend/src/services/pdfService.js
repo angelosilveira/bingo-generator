@@ -4,7 +4,6 @@ import { gerarHTMLCartela } from '../templates/cartela.js'
 
 const BATCH_SIZE = 20
 
-// Substitui variáveis do template customizado
 function renderTemplate(template, { numero, rows, premio, premioImageBase64, data, horario, local, valorCartela }) {
   const numFormatado = String(numero).padStart(4, '0')
   const dataFormatada = data
@@ -13,17 +12,17 @@ function renderTemplate(template, { numero, rows, premio, premioImageBase64, dat
 
   const tabelaHTML = rows.map(row =>
     `<tr>${row.map(cell =>
-      `<td class="td">${cell.free ? '🎁' : cell.value}</td>`
+      `<td class="${cell.free ? 'td td-free' : 'td'}">${cell.free ? '✦' : cell.value}</td>`
     ).join('')}</tr>`
   ).join('')
 
   const imgHtml = premioImageBase64
-    ? `<img class="prize-img" src="${premioImageBase64}" />`
-    : `<div style="font-size:36px;padding:8px 0;text-align:center;">🎁</div>`
+    ? `<img src="${premioImageBase64}" style="height:52px;max-width:100%;object-fit:contain;display:block;margin:0 auto 4px;" />`
+    : `<div style="font-size:42px;text-align:center;line-height:1;margin-bottom:4px;">🎁</div>`
 
   return template
     .replace(/{{NUMERO}}/g, numFormatado)
-    .replace(/{{PREMIO}}/g, premio || '')
+    .replace(/{{PREMIO}}/g, premio || 'A DEFINIR')
     .replace(/{{DATA}}/g, dataFormatada)
     .replace(/{{HORARIO}}/g, horario || '--:--')
     .replace(/{{LOCAL}}/g, local || '')
@@ -32,7 +31,17 @@ function renderTemplate(template, { numero, rows, premio, premioImageBase64, dat
     .replace(/{{TABELA}}/g, tabelaHTML)
 }
 
-export async function gerarPDF({ quantidadeCartelas, premio, premioImageBase64, data, horario, local, valorCartela, customTemplate }) {
+export async function gerarPDF({
+  quantidadeCartelas,
+  cartelajInicio = 1,   // começa do 1 por padrão
+  premio,
+  premioImageBase64,
+  data,
+  horario,
+  local,
+  valorCartela,
+  customTemplate,
+}) {
   const browser = await puppeteer.launch({
     headless: true,
     args: [
@@ -53,8 +62,9 @@ export async function gerarPDF({ quantidadeCartelas, premio, premioImageBase64, 
   const mergedDoc = await PDFDocument.create()
 
   try {
+    // Gera cartelas com numeração correta a partir de cartelajInicio
     const todasCartelas = Array.from({ length: quantidadeCartelas }, (_, i) => ({
-      numero: i + 1,
+      numero: cartelajInicio + i,   // ex: 501, 502, 503...
       rows: gerarCartela(),
     }))
 
@@ -63,7 +73,8 @@ export async function gerarPDF({ quantidadeCartelas, premio, premioImageBase64, 
       lotes.push(todasCartelas.slice(i, i + BATCH_SIZE))
     }
 
-    console.log(`📦 ${quantidadeCartelas} cartelas → ${lotes.length} lotes de ${BATCH_SIZE}`)
+    const fim = cartelajInicio + quantidadeCartelas - 1
+    console.log(`📦 Cartelas ${cartelajInicio}–${fim} → ${lotes.length} lotes de ${BATCH_SIZE}`)
 
     for (let li = 0; li < lotes.length; li++) {
       const lote = lotes[li]
@@ -72,7 +83,6 @@ export async function gerarPDF({ quantidadeCartelas, premio, premioImageBase64, 
       for (const { numero, rows } of lote) {
         const page = await browser.newPage()
         try {
-          // Usa template customizado (com variáveis) ou o padrão (com função)
           const html = customTemplate
             ? renderTemplate(customTemplate, { numero, rows, premio, premioImageBase64, data, horario, local, valorCartela })
             : gerarHTMLCartela({ numero, rows, premio, premioImageBase64, data, horario, local, valorCartela })
