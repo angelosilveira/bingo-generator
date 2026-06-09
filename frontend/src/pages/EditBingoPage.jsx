@@ -33,7 +33,7 @@ export default function EditBingoPage() {
         const snap = await getDoc(doc(db, 'bingos', id))
         if (!snap.exists()) {
           toast.error('Bingo não encontrado.')
-          navigate('/')
+          navigate('/admin')
           return
         }
         const d = snap.data()
@@ -51,7 +51,7 @@ export default function EditBingoPage() {
         })
       } catch {
         toast.error('Erro ao carregar bingo.')
-        navigate('/')
+        navigate('/admin')
       } finally {
         setLoading(false)
       }
@@ -119,7 +119,7 @@ export default function EditBingoPage() {
       URL.revokeObjectURL(url)
 
       toast.success(`Cartelas ${form.cartelajInicio}–${cartelaFim} geradas!`)
-      navigate('/')
+      navigate('/admin')
     } catch (err) {
       toast.error(err.message || 'Erro ao gerar cartelas.')
     } finally {

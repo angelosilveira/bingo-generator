@@ -65,7 +65,7 @@ export default function NewBingoPage() {
       URL.revokeObjectURL(url)
 
       toast.success(`${form.quantidadeCartelas} cartelas geradas!`)
-      navigate('/')
+      navigate('/admin')
     } catch (err) {
       toast.error(err.message || 'Erro ao gerar cartelas.')
     } finally {

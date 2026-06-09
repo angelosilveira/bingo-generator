@@ -3,7 +3,7 @@ import { LayoutDashboard, Plus, Code2, LogOut } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Bingos' },
+  { to: '/admin', icon: LayoutDashboard, label: 'Bingos' },
   { to: '/novo', icon: Plus, label: 'Novo Bingo' },
   { to: '/template', icon: Code2, label: 'Template' },
 ]
