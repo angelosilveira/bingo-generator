@@ -1,6 +1,7 @@
 import express from 'express'
 import { db } from '../services/firebase.js'
 import { gerarCartela } from '../services/bingoGenerator.js'
+import { gerarHTMLCartela } from '../templates/cartela.js'
 
 const router = express.Router()
 
@@ -31,13 +32,15 @@ router.post('/', async (req, res) => {
   }
 })
 
-// POST /api/template/preview — renderiza cartela de exemplo como HTML completo
+// POST /api/template/preview
+// Aceita { html } (template customizado) OU dados do form para usar template salvo/padrão
 router.post('/preview', async (req, res) => {
-  const { html } = req.body
-  if (!html) return res.status(400).json({ error: 'html obrigatório' })
+  const { html, premio, data, horario, local, valorCartela, premioImageBase64 } = req.body
 
   const rows = gerarCartela()
-  const dataFormatada = new Date().toLocaleDateString('pt-BR')
+  const dataFormatada = data
+    ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')
+    : new Date().toLocaleDateString('pt-BR')
 
   const tabelaHTML = rows.map(row =>
     `<tr>${row.map(cell =>
@@ -45,18 +48,62 @@ router.post('/preview', async (req, res) => {
     ).join('')}</tr>`
   ).join('')
 
-  const rendered = html
-    .replace(/{{NUMERO}}/g, '0001')
-    .replace(/{{PREMIO}}/g, 'Smart TV 55" Samsung')
-    .replace(/{{DATA}}/g, dataFormatada)
-    .replace(/{{HORARIO}}/g, '19:00')
-    .replace(/{{LOCAL}}/g, 'Clube Recreativo Central')
-    .replace(/{{VALOR}}/g, 'R$ 10,00')
-    .replace(/{{IMAGEM_PREMIO}}/g, '<div style="font-size:42px;text-align:center;line-height:1;margin-bottom:4px;">🎁</div>')
-    .replace(/{{TABELA}}/g, tabelaHTML)
+  const imgHtml = premioImageBase64
+    ? `<img src="${premioImageBase64}" style="height:52px;max-width:100%;object-fit:contain;display:block;margin:0 auto 4px;" />`
+    : `<div style="font-size:42px;text-align:center;line-height:1;margin-bottom:4px;">🎁</div>`
+
+  // Se veio HTML customizado no body, usa ele
+  if (html) {
+    const rendered = html
+      .replace(/{{NUMERO}}/g, '0001')
+      .replace(/{{PREMIO}}/g, premio || 'Smart TV 55" Samsung')
+      .replace(/{{DATA}}/g, dataFormatada)
+      .replace(/{{HORARIO}}/g, horario || '19:00')
+      .replace(/{{LOCAL}}/g, local || 'Clube Recreativo Central')
+      .replace(/{{VALOR}}/g, valorCartela || 'R$ 10,00')
+      .replace(/{{IMAGEM_PREMIO}}/g, imgHtml)
+      .replace(/{{TABELA}}/g, tabelaHTML)
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    return res.send(rendered)
+  }
+
+  // Tenta buscar template salvo no Firestore
+  let savedHtml = null
+  try {
+    const snap = await db.collection('config').doc('template').get()
+    if (snap.exists && snap.data().html) savedHtml = snap.data().html
+  } catch {}
+
+  if (savedHtml) {
+    const rendered = savedHtml
+      .replace(/{{NUMERO}}/g, '0001')
+      .replace(/{{PREMIO}}/g, premio || 'Smart TV 55" Samsung')
+      .replace(/{{DATA}}/g, dataFormatada)
+      .replace(/{{HORARIO}}/g, horario || '19:00')
+      .replace(/{{LOCAL}}/g, local || 'Clube Recreativo Central')
+      .replace(/{{VALOR}}/g, valorCartela || 'R$ 10,00')
+      .replace(/{{IMAGEM_PREMIO}}/g, imgHtml)
+      .replace(/{{TABELA}}/g, tabelaHTML)
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    return res.send(rendered)
+  }
+
+  // Fallback: template padrão do sistema
+  const fallbackHtml = gerarHTMLCartela({
+    numero: 1,
+    rows,
+    premio: premio || 'Smart TV 55" Samsung',
+    premioImageBase64: premioImageBase64 || null,
+    data: data || new Date().toISOString().split('T')[0],
+    horario: horario || '19:00',
+    local: local || 'Clube Recreativo Central',
+    valorCartela: valorCartela || 'R$ 10,00',
+  })
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8')
-  res.send(rendered)
+  res.send(fallbackHtml)
 })
 
 export default router
