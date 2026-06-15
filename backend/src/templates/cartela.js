@@ -199,7 +199,7 @@ export const BASE_CSS = `
   .main { flex:1; display:flex; gap:18px; padding:22px 22px 14px; min-height:0; }
 
   .left {
-    width: 250px; flex-shrink:0;
+    width: 300px; flex-shrink:0;
     display:flex; flex-direction:column; gap:10px;
   }
 
@@ -228,7 +228,7 @@ export const BASE_CSS = `
   }
 
   .prize-photo {
-    width:100%; height:138px; object-fit:cover;
+    width:100%; height:175px; object-fit:cover;
     border-radius:10px; border:1.5px solid rgba(201,162,39,.4);
     margin-top:2px;
   }
@@ -267,16 +267,17 @@ export const BASE_CSS = `
   .grid { flex:1; width:100%; border-collapse:collapse; }
   .grid tr { height:20%; }
   .cell {
-    border:1px solid rgba(201,162,39,.35);
+    border:1px solid rgba(201,162,39,.45);
     text-align:center; vertical-align:middle;
     font-family:Impact,'Arial Black',Arial,sans-serif;
-    font-size:38px; color:#fff;
-    background: rgba(255,255,255,.015);
+    font-size:32px; color:#1a1a1a;
+    background: #FAF6EC;
   }
   .cell-free {
-    background: radial-gradient(circle, rgba(201,162,39,.18), transparent 70%);
+    background: #F0E4C0;
     position:relative;
   }
+  .cell-free .gift-icon { color:#0d0d0d; }
 
   /* ══ INFO BAR ══ */
   .infobar {
