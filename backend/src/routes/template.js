@@ -2,12 +2,13 @@ import express from 'express'
 import { db } from '../services/firebase.js'
 import { gerarCartela } from '../services/bingoGenerator.js'
 import { gerarHTMLCartela } from '../templates/cartela.js'
-import { gerarQRCode } from '../services/qrService.js'
 import { fmtValor } from '../utils/format.js'
 
 const router = express.Router()
 
-const MOCK_QR_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 90" width="90" height="90" style="display:block;margin:0 auto 4px;"><rect width="90" height="90" fill="white"/><rect x="5" y="5" width="25" height="25" rx="2" fill="#0D1F3C"/><rect x="9" y="9" width="17" height="17" rx="1" fill="white"/><rect x="13" y="13" width="9" height="9" rx="1" fill="#0D1F3C"/><rect x="60" y="5" width="25" height="25" rx="2" fill="#0D1F3C"/><rect x="64" y="9" width="17" height="17" rx="1" fill="white"/><rect x="68" y="13" width="9" height="9" rx="1" fill="#0D1F3C"/><rect x="5" y="60" width="25" height="25" rx="2" fill="#0D1F3C"/><rect x="9" y="64" width="17" height="17" rx="1" fill="white"/><rect x="13" y="68" width="9" height="9" rx="1" fill="#0D1F3C"/><rect x="35" y="5" width="4" height="4" fill="#0D1F3C"/><rect x="41" y="5" width="4" height="4" fill="#0D1F3C"/><rect x="47" y="5" width="4" height="4" fill="#0D1F3C"/><rect x="35" y="11" width="4" height="4" fill="#0D1F3C"/><rect x="47" y="11" width="4" height="4" fill="#0D1F3C"/><rect x="35" y="17" width="4" height="4" fill="#0D1F3C"/><rect x="41" y="17" width="4" height="4" fill="#0D1F3C"/><rect x="53" y="17" width="4" height="4" fill="#0D1F3C"/><rect x="5" y="35" width="4" height="4" fill="#0D1F3C"/><rect x="23" y="35" width="4" height="4" fill="#0D1F3C"/><rect x="35" y="35" width="4" height="4" fill="#0D1F3C"/><rect x="53" y="35" width="4" height="4" fill="#0D1F3C"/><rect x="71" y="35" width="4" height="4" fill="#0D1F3C"/><rect x="5" y="41" width="4" height="4" fill="#0D1F3C"/><rect x="29" y="41" width="4" height="4" fill="#0D1F3C"/><rect x="47" y="41" width="4" height="4" fill="#0D1F3C"/><rect x="77" y="41" width="4" height="4" fill="#0D1F3C"/><rect x="5" y="47" width="4" height="4" fill="#0D1F3C"/><rect x="23" y="47" width="4" height="4" fill="#0D1F3C"/><rect x="53" y="47" width="4" height="4" fill="#0D1F3C"/><rect x="71" y="47" width="4" height="4" fill="#0D1F3C"/><rect x="35" y="53" width="4" height="4" fill="#0D1F3C"/><rect x="59" y="53" width="4" height="4" fill="#0D1F3C"/><rect x="77" y="53" width="4" height="4" fill="#0D1F3C"/><rect x="47" y="59" width="4" height="4" fill="#0D1F3C"/><rect x="65" y="59" width="4" height="4" fill="#0D1F3C"/><rect x="41" y="65" width="4" height="4" fill="#0D1F3C"/><rect x="71" y="65" width="4" height="4" fill="#0D1F3C"/><rect x="35" y="71" width="4" height="4" fill="#0D1F3C"/><rect x="53" y="71" width="4" height="4" fill="#0D1F3C"/><rect x="41" y="77" width="4" height="4" fill="#0D1F3C"/><rect x="71" y="77" width="4" height="4" fill="#0D1F3C"/></svg>`
+const GIFT_ICON = `<svg viewBox="0 0 24 24" fill="none" class="gift-icon"><rect x="3" y="9" width="18" height="11" rx="1" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18v3H3V9Z" fill="currentColor" opacity=".25"/><path d="M12 9v11" stroke="currentColor" stroke-width="1.8"/><path d="M12 9C12 9 9 9 8 7.5C7.2 6.3 8 5 9.3 5C11 5 12 7 12 9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 9C12 9 15 9 16 7.5C16.8 6.3 16 5 14.7 5C13 5 12 7 12 9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`
+
+const GIFT_ICON_LG = `<svg viewBox="0 0 24 24" fill="none" class="gift-icon-lg"><rect x="3" y="9" width="18" height="11" rx="1" stroke="currentColor" stroke-width="1.5"/><path d="M3 9h18v3H3V9Z" fill="currentColor" opacity=".2"/><path d="M12 9v11" stroke="currentColor" stroke-width="1.5"/><path d="M12 9C12 9 9 9 8 7.5C7.2 6.3 8 5 9.3 5C11 5 12 7 12 9Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 9C12 9 15 9 16 7.5C16.8 6.3 16 5 14.7 5C13 5 12 7 12 9Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`
 
 async function getTemplateFromFirestore() {
   try {
@@ -20,11 +21,7 @@ async function getTemplateFromFirestore() {
   return null
 }
 
-function buildQrBlock(qrUrl) {
-  return `<img src="${qrUrl}" style="width:90px;height:90px;display:block;margin:0 auto 4px;" />`
-}
-
-function substitute(tmpl, { premio, dataFormatada, horario, local, valorCartela, qrBlock, tabelaHTML }) {
+function substitute(tmpl, { premio, dataFormatada, horario, local, valorCartela, premioImg, tabelaHTML }) {
   return tmpl
     .replace(/{{NUMERO}}/g, '0001')
     .replace(/{{PREMIO}}/g, premio || 'Smart TV 55" Samsung')
@@ -32,21 +29,15 @@ function substitute(tmpl, { premio, dataFormatada, horario, local, valorCartela,
     .replace(/{{HORARIO}}/g, horario || '19:00')
     .replace(/{{LOCAL}}/g, local || 'Clube Recreativo Central')
     .replace(/{{VALOR}}/g, fmtValor(valorCartela) || 'R$ 10,00')
-    .replace(/{{QR_CODE}}/g, qrBlock)
-    .replace(/{{IMAGEM_PREMIO}}/g, qrBlock)
+    .replace(/{{IMAGEM_PREMIO}}/g, premioImg)
+    .replace(/{{QR_CODE}}/g, premioImg) // retrocompat
     .replace(/{{TABELA}}/g, tabelaHTML)
 }
 
 router.get('/', async (req, res) => {
   try {
     const savedHtml = await getTemplateFromFirestore()
-    if (savedHtml) {
-      const html = savedHtml.includes('{{IMAGEM_PREMIO}}')
-        ? savedHtml.replace(/{{IMAGEM_PREMIO}}/g, '{{QR_CODE}}')
-        : savedHtml
-      return res.json({ html })
-    }
-    res.json({ html: null })
+    res.json({ html: savedHtml })
   } catch {
     res.json({ html: null })
   }
@@ -74,31 +65,24 @@ router.delete('/', async (req, res) => {
 
 router.post('/preview', async (req, res) => {
   try {
-    const { html, premio, data, horario, local, valorCartela, premioQrLink } = req.body
+    const { html, premio, data, horario, local, valorCartela, premioImageBase64 } = req.body
 
     const rows = gerarCartela()
     const dataFormatada = data
       ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')
       : new Date().toLocaleDateString('pt-BR')
 
-    let qrBlock = MOCK_QR_SVG
-    if (premioQrLink && premioQrLink.startsWith('http')) {
-      try {
-        const qrUrl = await Promise.race([
-          gerarQRCode(premioQrLink),
-          new Promise(resolve => setTimeout(() => resolve(null), 4000)),
-        ])
-        if (qrUrl) qrBlock = buildQrBlock(qrUrl)
-      } catch {}
-    }
+    const premioImg = premioImageBase64
+      ? `<img src="${premioImageBase64}" class="prize-photo" />`
+      : `<div class="prize-photo prize-photo-empty">${GIFT_ICON_LG}</div>`
 
     const tabelaHTML = rows.map(row =>
       `<tr>${row.map(cell =>
-        `<td class="${cell.free ? 'td td-free' : 'td'}">${cell.free ? '✦' : cell.value}</td>`
+        `<td class="cell${cell.free ? ' cell-free' : ''}">${cell.free ? GIFT_ICON : cell.value}</td>`
       ).join('')}</tr>`
     ).join('')
 
-    const params = { premio, dataFormatada, horario, local, valorCartela, qrBlock, tabelaHTML }
+    const params = { premio, dataFormatada, horario, local, valorCartela, premioImg, tabelaHTML }
 
     if (html) {
       res.setHeader('Content-Type', 'text/html; charset=utf-8')
@@ -114,7 +98,7 @@ router.post('/preview', async (req, res) => {
     const fallback = gerarHTMLCartela({
       numero: 1, rows,
       premio: premio || 'Smart TV 55" Samsung',
-      premioQrUrl: null,
+      premioImageBase64,
       data, horario, local, valorCartela,
     })
     res.setHeader('Content-Type', 'text/html; charset=utf-8')

@@ -7,7 +7,7 @@ const router = express.Router()
 router.post('/gerar', async (req, res) => {
   const {
     bingoId, quantidadeCartelas, cartelajInicio = 1,
-    premio, premioQrLink,
+    premio, premioImageBase64,
     data, horario, local, valorCartela,
   } = req.body
 
@@ -36,7 +36,7 @@ router.post('/gerar', async (req, res) => {
     const pdfBuffer = await gerarPDF({
       quantidadeCartelas: quantidade,
       cartelajInicio: inicio,
-      premio, premioQrLink,
+      premio, premioImageBase64,
       data, horario, local, valorCartela,
       customTemplate,
     })

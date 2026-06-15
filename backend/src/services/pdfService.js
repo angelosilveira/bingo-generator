@@ -1,27 +1,30 @@
 import puppeteer from 'puppeteer'
 import { gerarCartela } from './bingoGenerator.js'
 import { gerarHTMLCartela } from '../templates/cartela.js'
-import { gerarQRCode } from './qrService.js'
 import { fmtValor } from '../utils/format.js'
 
 const BATCH_SIZE = 20
 
-function renderTemplate(template, { numero, rows, premio, premioQrUrl, data, horario, local, valorCartela }) {
+// Para templates customizados salvos pelo usuário (editor de template)
+function renderTemplate(template, { numero, rows, premio, premioImageBase64, data, horario, local, valorCartela }) {
   const numFormatado = String(numero).padStart(4, '0')
   const dataFormatada = data
     ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')
     : '__/__/____'
 
+  const GIFT_ICON = `<svg viewBox="0 0 24 24" fill="none" class="gift-icon"><rect x="3" y="9" width="18" height="11" rx="1" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18v3H3V9Z" fill="currentColor" opacity=".25"/><path d="M12 9v11" stroke="currentColor" stroke-width="1.8"/><path d="M12 9C12 9 9 9 8 7.5C7.2 6.3 8 5 9.3 5C11 5 12 7 12 9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 9C12 9 15 9 16 7.5C16.8 6.3 16 5 14.7 5C13 5 12 7 12 9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`
+
   const tabelaHTML = rows.map(row =>
     `<tr>${row.map(cell =>
-      `<td class="${cell.free ? 'td td-free' : 'td'}">${cell.free ? '✦' : cell.value}</td>`
+      `<td class="cell${cell.free ? ' cell-free' : ''}">${cell.free ? GIFT_ICON : cell.value}</td>`
     ).join('')}</tr>`
   ).join('')
 
-  const qrBlock = premioQrUrl
-    ? `<img src="${premioQrUrl}" style="width:90px;height:90px;display:block;margin:0 auto 6px;" />`
-    : `<div style="width:90px;height:90px;margin:0 auto 6px;background:#f0f0f0;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;border-radius:6px;"><div style="font-size:10px;color:#999;text-align:center;line-height:1.3;padding:4px;">QR CODE</div></div>`
+  const GIFT_ICON_LG = `<svg viewBox="0 0 24 24" fill="none" class="gift-icon-lg"><rect x="3" y="9" width="18" height="11" rx="1" stroke="currentColor" stroke-width="1.5"/><path d="M3 9h18v3H3V9Z" fill="currentColor" opacity=".2"/><path d="M12 9v11" stroke="currentColor" stroke-width="1.5"/><path d="M12 9C12 9 9 9 8 7.5C7.2 6.3 8 5 9.3 5C11 5 12 7 12 9Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 9C12 9 15 9 16 7.5C16.8 6.3 16 5 14.7 5C13 5 12 7 12 9Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`
 
+  const premioImg = premioImageBase64
+    ? `<img src="${premioImageBase64}" class="prize-photo" />`
+    : `<div class="prize-photo prize-photo-empty">${GIFT_ICON_LG}</div>`
 
   return template
     .replace(/{{NUMERO}}/g, numFormatado)
@@ -30,7 +33,7 @@ function renderTemplate(template, { numero, rows, premio, premioQrUrl, data, hor
     .replace(/{{HORARIO}}/g, horario || '--:--')
     .replace(/{{LOCAL}}/g, local || '')
     .replace(/{{VALOR}}/g, fmtValor(valorCartela) || '')
-    .replace(/{{QR_CODE}}/g, qrBlock)
+    .replace(/{{IMAGEM_PREMIO}}/g, premioImg)
     .replace(/{{TABELA}}/g, tabelaHTML)
 }
 
@@ -38,17 +41,13 @@ export async function gerarPDF({
   quantidadeCartelas,
   cartelajInicio = 1,
   premio,
-  premioQrLink,
+  premioImageBase64,
   data,
   horario,
   local,
   valorCartela,
   customTemplate,
 }) {
-  // Gera QR code uma vez só (mesmo URL para todas as cartelas do bingo)
-  const premioQrUrl = await gerarQRCode(premioQrLink)
-  console.log(`🔗 QR code ${premioQrUrl ? 'gerado' : 'não gerado (sem URL)'}`)
-
   const browser = await puppeteer.launch({
     headless: true,
     args: [
@@ -83,8 +82,8 @@ export async function gerarPDF({
         const page = await browser.newPage()
         try {
           const html = customTemplate
-            ? renderTemplate(customTemplate, { numero, rows, premio, premioQrUrl, data, horario, local, valorCartela })
-            : gerarHTMLCartela({ numero, rows, premio, premioQrUrl, data, horario, local, valorCartela })
+            ? renderTemplate(customTemplate, { numero, rows, premio, premioImageBase64, data, horario, local, valorCartela })
+            : gerarHTMLCartela({ numero, rows, premio, premioImageBase64, data, horario, local, valorCartela })
 
           await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 60000 })
           const pdfBuf = await page.pdf({ format: 'A4', printBackground: true, timeout: 60000 })

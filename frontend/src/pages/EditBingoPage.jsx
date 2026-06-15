@@ -1,25 +1,48 @@
-import { useState, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { db } from '../services/firebase'
-import { Loader2, Plus, Link } from 'lucide-react'
+import { Loader2, Plus, ImageIcon } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import Layout from '../components/Layout'
-import { formatCurrency } from '../utils/currency'
 import BingoCardPreview from '../components/BingoCardPreview'
+import { formatCurrency } from '../utils/currency'
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/+$/, '')
+
+function imageFileToBase64(file, maxSize = 600) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const ratio = Math.min(maxSize / img.width, maxSize / img.height, 1)
+        canvas.width = img.width * ratio
+        canvas.height = img.height * ratio
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL('image/jpeg', 0.85))
+      }
+      img.onerror = reject
+      img.src = e.target.result
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
 
 export default function EditBingoPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const fileRef = useRef(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [totalGeradas, setTotalGeradas] = useState(0)
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
 
   const [form, setForm] = useState({
     premio: '',
-    premioQrLink: '',
     data: '',
     horario: '',
     local: '',
@@ -42,7 +65,6 @@ export default function EditBingoPage() {
         setTotalGeradas(total)
         setForm({
           premio: d.premio || '',
-          premioQrLink: d.premioQrLink || '',
           data: d.data || '',
           horario: d.horario || '',
           local: d.local || '',
@@ -50,6 +72,7 @@ export default function EditBingoPage() {
           quantidadeCartelas: 100,
           cartelajInicio: total + 1,
         })
+        if (d.premioImageBase64) setImagePreview(d.premioImageBase64)
       } catch {
         toast.error('Erro ao carregar bingo.')
         navigate('/admin')
@@ -61,6 +84,14 @@ export default function EditBingoPage() {
   }, [id])
 
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
+
+  const handleImage = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) { toast.error('Selecione uma imagem válida.'); return }
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
 
   const cartelaFim = Number(form.cartelajInicio) + Number(form.quantidadeCartelas) - 1
 
@@ -76,9 +107,12 @@ export default function EditBingoPage() {
     }
     setSubmitting(true)
     try {
+      let premioImageBase64 = imagePreview
+      if (imageFile) premioImageBase64 = await imageFileToBase64(imageFile)
+
       await updateDoc(doc(db, 'bingos', id), {
         premio: form.premio,
-        premioQrLink: form.premioQrLink,
+        premioImageBase64,
         data: form.data,
         horario: form.horario,
         local: form.local,
@@ -96,7 +130,7 @@ export default function EditBingoPage() {
         body: JSON.stringify({
           bingoId: id,
           premio: form.premio,
-          premioQrLink: form.premioQrLink,
+          premioImageBase64,
           data: form.data,
           horario: form.horario,
           local: form.local,
@@ -178,15 +212,17 @@ export default function EditBingoPage() {
                       className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]" required />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1 flex items-center gap-1.5">
-                      <Link size={14} /> Link para o QR Code do prêmio
-                    </label>
-                    <input type="url" value={form.premioQrLink} onChange={set('premioQrLink')}
-                      placeholder="https://seusite.com/galeria-do-premio"
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]" />
-                    <p className="text-xs text-gray-400 mt-1">
-                      O cliente escaneará este QR code na cartela para ver o prêmio
-                    </p>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Imagem do prêmio</label>
+                    <div onClick={() => fileRef.current?.click()}
+                      className="border-2 border-dashed border-gray-200 rounded-xl p-5 text-center cursor-pointer hover:border-[#0D1F3C] hover:bg-blue-50 transition-colors">
+                      {imagePreview
+                        ? <img src={imagePreview} alt="Preview" className="max-h-32 mx-auto rounded-lg object-contain" />
+                        : <div className="flex flex-col items-center gap-2 text-gray-400">
+                            <ImageIcon size={28} />
+                            <span className="text-sm">Clique para enviar uma foto</span>
+                          </div>}
+                      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
+                    </div>
                   </div>
                 </div>
               </section>
@@ -266,7 +302,7 @@ export default function EditBingoPage() {
             </form>
 
             <div className="lg:sticky lg:top-8">
-              <BingoCardPreview form={form} />
+              <BingoCardPreview form={form} imagePreview={imagePreview} />
             </div>
           </div>
         </div>

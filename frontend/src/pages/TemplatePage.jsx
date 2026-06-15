@@ -10,123 +10,300 @@ const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8"/>
 <style>
+
   * { margin:0; padding:0; box-sizing:border-box; }
-  html, body { width:794px; height:1123px; background:#F2F5FA; font-family:Arial,sans-serif; overflow:hidden; }
-  body { display:flex; flex-direction:column; padding:20px; gap:0; }
-  table { border-collapse:collapse; width:100%; }
-  .th { font-family:Impact,'Arial Black',Arial,sans-serif; font-size:40px; font-weight:900; text-align:center; letter-spacing:3px; width:20%; padding:13px 0; }
-  .th-d { background:#0D1F3C; color:#fff; }
-  .th-g { background:#E8A000; color:#fff; }
-  .td { font-family:Impact,'Arial Black',Arial,sans-serif; font-size:44px; font-weight:900; text-align:center; color:#0D1F3C; height:74px; vertical-align:middle; border:1px solid #E2E8F2; background:#fff; }
-  .td-free { font-size:34px; color:#E8A000; }
+  html, body { width:794px; height:1123px; background:#0a0a0a; font-family:'Arial',sans-serif; overflow:hidden; }
+  body { padding:18px; }
+
+  .card {
+    width:100%; height:100%;
+    background: linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 100%);
+    border: 1.5px solid #C9A227;
+    border-radius: 16px;
+    display:flex; flex-direction:column;
+    overflow:hidden;
+    position:relative;
+  }
+
+  .icon { width:18px; height:18px; color:#C9A227; flex-shrink:0; }
+  .stub-icon { width:15px; height:15px; color:#C9A227; flex-shrink:0; }
+  .gift-icon { width:26px; height:26px; color:#0d0d0d; }
+  .gift-icon-lg { width:48px; height:48px; color:#C9A227; opacity:.5; }
+
+  /* ══ MAIN ══ */
+  .main { flex:1; display:flex; gap:18px; padding:22px 22px 14px; min-height:0; }
+
+  .left {
+    width: 250px; flex-shrink:0;
+    display:flex; flex-direction:column; gap:10px;
+  }
+
+  .num-tag {
+    display:flex; align-items:center; gap:10px;
+    background: rgba(201,162,39,.08);
+    border:1px solid rgba(201,162,39,.35);
+    border-radius:10px; padding:10px 14px;
+  }
+  .num-label { font-size:9px; font-weight:900; color:#C9A227; letter-spacing:2px; }
+  .num-value { font-family:Impact,'Arial Black',Arial,sans-serif; font-size:26px; color:#fff; letter-spacing:2px; line-height:1.1; }
+
+  .prize-label {
+    display:inline-block;
+    background: linear-gradient(90deg,#C9A227,#E8C158);
+    color:#0d0d0d;
+    font-size:10px; font-weight:900; letter-spacing:3px;
+    padding:5px 14px; border-radius:6px;
+    width:fit-content;
+    margin-top:4px;
+  }
+  .prize-name {
+    font-family:Impact,'Arial Black',Arial,sans-serif;
+    font-size:21px; color:#fff; line-height:1.2;
+    word-break:break-word;
+  }
+
+  .prize-photo {
+    width:100%; height:138px; object-fit:cover;
+    border-radius:10px; border:1.5px solid rgba(201,162,39,.4);
+    margin-top:2px;
+  }
+  .prize-photo-empty {
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.03);
+    border:1.5px dashed rgba(201,162,39,.3);
+  }
+
+  .prize-value {
+    font-family:Impact,'Arial Black',Arial,sans-serif;
+    font-size:34px;
+    background: linear-gradient(90deg,#E8C158,#C9A227);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    letter-spacing:1px; line-height:1; margin-top:auto;
+  }
+  .prize-value-sub {
+    font-size:9px; font-weight:900; color:#888; letter-spacing:3px; margin-top:2px;
+  }
+
+  /* ══ RIGHT / BINGO TABLE ══ */
+  .right { flex:1; display:flex; flex-direction:column; min-width:0; }
+
+  .bingo-title {
+    display:flex; align-items:center; justify-content:center; gap:18px;
+    margin-bottom:14px;
+  }
+  .bingo-text {
+    font-family:Impact,'Arial Black',Arial,sans-serif;
+    font-size:54px; letter-spacing:14px;
+    background: linear-gradient(180deg,#F5DA8C,#C9A227);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .dot { width:8px; height:8px; border-radius:50%; background:#C9A227; flex-shrink:0; }
+
+  .grid { flex:1; width:100%; border-collapse:collapse; }
+  .grid tr { height:20%; }
+  .cell {
+    border:1px solid rgba(201,162,39,.35);
+    text-align:center; vertical-align:middle;
+    font-family:Impact,'Arial Black',Arial,sans-serif;
+    font-size:38px; color:#fff;
+    background: rgba(255,255,255,.015);
+  }
+  .cell-free {
+    background: radial-gradient(circle, rgba(201,162,39,.18), transparent 70%);
+    position:relative;
+  }
+
+  /* ══ INFO BAR ══ */
+  .infobar {
+    display:flex; gap:0;
+    border-top:1px solid rgba(201,162,39,.25);
+    padding:12px 22px;
+  }
+  .info-item {
+    flex:1; display:flex; align-items:center; gap:10px;
+    padding-right:16px;
+  }
+  .info-label { font-size:9px; font-weight:900; color:#C9A227; letter-spacing:2px; margin-bottom:2px; }
+  .info-value { font-size:13px; font-weight:700; color:#fff; line-height:1.3; }
+
+  /* ══ SCISSORS ══ */
+  .scissors-line {
+    display:flex; align-items:center; gap:10px;
+    padding:0 22px; margin:4px 0;
+  }
+  .scissors { width:18px; height:18px; color:#C9A227; flex-shrink:0; transform:rotate(90deg); }
+  .dash-line { flex:1; border-top:1.5px dashed rgba(201,162,39,.35); }
+
+  /* ══ STUB / CANHOTO ══ */
+  .stub {
+    display:flex; align-items:stretch;
+    border:1px solid rgba(201,162,39,.35);
+    border-radius:10px;
+    margin:6px 22px 18px;
+    overflow:hidden;
+    background: rgba(255,255,255,.015);
+  }
+  .stub-tag {
+    background: linear-gradient(180deg,#E8C158,#C9A227);
+    color:#0d0d0d;
+    font-size:10px; font-weight:900; letter-spacing:3px;
+    writing-mode:vertical-rl; transform:rotate(180deg);
+    display:flex; align-items:center; justify-content:center;
+    padding:10px 8px; flex-shrink:0;
+  }
+  .stub-content {
+    flex:1; display:flex; align-items:center; gap:18px;
+    padding:12px 18px;
+  }
+  .stub-num { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .stub-num-label { font-size:8px; font-weight:900; color:#C9A227; letter-spacing:2px; }
+  .stub-num-value { font-family:Impact,'Arial Black',Arial,sans-serif; font-size:18px; color:#fff; }
+
+  .stub-fields { flex:1.4; display:flex; flex-direction:column; gap:7px; }
+  .stub-field { display:flex; align-items:center; gap:6px; }
+  .stub-field-label { font-size:9px; font-weight:900; color:#999; letter-spacing:1.5px; flex-shrink:0; width:62px; }
+  .stub-field-line { flex:1; border-bottom:1px solid rgba(201,162,39,.4); height:1px; }
+
+  .stub-payment { display:flex; flex-direction:column; gap:6px; flex-shrink:0; }
+  .payment-box { display:flex; align-items:center; gap:6px; }
+  .checkbox { width:13px; height:13px; border:1.5px solid #C9A227; border-radius:3px; flex-shrink:0; }
+  .payment-box span { font-size:9px; font-weight:900; color:#ccc; letter-spacing:1.5px; }
+
+  .stub-meta { flex-shrink:0; text-align:right; min-width:90px; }
+  .stub-meta div:first-child { font-size:10px; color:#999; font-weight:700; max-width:90px; word-break:break-word; line-height:1.2; }
+  .stub-meta-value {
+    font-family:Impact,'Arial Black',Arial,sans-serif;
+    font-size:18px;
+    background: linear-gradient(90deg,#E8C158,#C9A227);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    margin-top:2px;
+  }
+
 </style>
 </head>
 <body>
+<div class="card">
 
-<!-- HEADER -->
-<div style="display:flex;gap:12px;margin-bottom:12px;flex-shrink:0;align-items:stretch;">
+  <!-- ══ PARTE PRINCIPAL ══ -->
+  <div class="main">
 
-  <!-- BINGO -->
-  <div style="background:linear-gradient(135deg,#0D1F3C 0%,#182E50 60%,#0D1F3C 100%);border-radius:12px;padding:14px 22px 12px;flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;">
-    <div style="position:absolute;inset:0;background:repeating-linear-gradient(-55deg,transparent,transparent 16px,rgba(232,160,0,.07) 16px,rgba(232,160,0,.07) 32px);pointer-events:none;"></div>
-    <div style="font-family:Impact,'Arial Black',Arial,sans-serif;font-size:80px;line-height:.95;color:#E8A000;letter-spacing:8px;text-shadow:0 4px 20px rgba(0,0,0,.5),3px 3px 0 rgba(0,0,0,.35);position:relative;">BINGO</div>
-    <div style="height:3px;background:linear-gradient(90deg,#E8A000 40%,transparent);margin-top:6px;border-radius:2px;"></div>
-  </div>
-
-  <!-- Nº + Prêmio + QR -->
-  <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
-
-    <!-- Nº compacto -->
-    <div style="display:flex;align-items:center;background:#fff;border:2px solid #0D1F3C;border-radius:8px;overflow:hidden;height:36px;">
-      <div style="background:#0D1F3C;color:#E8A000;font-size:9px;font-weight:900;letter-spacing:1.5px;padding:0 10px;height:100%;display:flex;align-items:center;white-space:nowrap;text-transform:uppercase;font-family:Arial,sans-serif;">Nº DA CARTELA</div>
-      <div style="flex:1;font-family:Impact,'Arial Black',Arial,sans-serif;font-size:22px;font-weight:900;color:#C0392B;letter-spacing:3px;text-align:center;padding:0 10px;">{{NUMERO}}</div>
-    </div>
-
-    <!-- Prêmio + QR Code -->
-    <div style="flex:1;background:#fff;border:2px solid #0D1F3C;border-radius:10px;overflow:hidden;display:flex;align-items:stretch;">
-
-      <!-- Tag PRÊMIO vertical -->
-      <div style="background:#E8A000;color:#0D1F3C;font-size:10px;font-weight:900;writing-mode:vertical-rl;transform:rotate(180deg);padding:10px 7px;letter-spacing:3px;text-transform:uppercase;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;">PRÊMIO</div>
-
-      <!-- Nome do prêmio -->
-      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:10px 14px;min-width:0;border-right:2px solid #E2E8F2;">
-        <div style="font-family:Impact,'Arial Black',Arial,sans-serif;font-size:20px;font-weight:900;color:#0D1F3C;line-height:1.15;word-break:break-word;">{{PREMIO}}</div>
-        <div style="font-size:10px;color:#999;font-weight:600;margin-top:4px;font-style:italic;font-family:Arial,sans-serif;">Escaneie o QR para ver o prêmio</div>
+    <!-- Coluna esquerda -->
+    <div class="left">
+      <div class="num-tag">
+        <svg viewBox="0 0 24 24" fill="none" class="icon"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 7v10" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2 2"/></svg>
+        <div>
+          <div class="num-label">CARTELA Nº</div>
+          <div class="num-value">{{NUMERO}}</div>
+        </div>
       </div>
 
-      <!-- QR Code -->
-      <div style="width:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;flex-shrink:0;gap:4px;">
-        {{QR_CODE}}
-        <div style="font-size:8px;color:#888;text-align:center;font-family:Arial,sans-serif;letter-spacing:.5px;font-weight:600;text-transform:uppercase;">Ver prêmio</div>
+      <div class="prize-label">PRÊMIO</div>
+      <div class="prize-name">{{PREMIO}}</div>
+
+      {{IMAGEM_PREMIO}}
+
+      <div class="prize-value">{{VALOR}}</div>
+      <div class="prize-value-sub">VALOR DA CARTELA</div>
+    </div>
+
+    <!-- Coluna direita -->
+    <div class="right">
+      <div class="bingo-title">
+        <span class="dot"></span>
+        <span class="bingo-text">B I N G O</span>
+        <span class="dot"></span>
       </div>
 
+      <table class="grid">
+        <tbody>{{TABELA}}</tbody>
+      </table>
     </div>
   </div>
-</div>
 
-<!-- TABELA FULL WIDTH -->
-<div style="flex:1;border-radius:12px;overflow:hidden;border:3px solid #0D1F3C;margin-bottom:12px;display:flex;flex-direction:column;">
-  <table style="height:100%;">
-    <thead>
-      <tr style="height:62px;">
-        <td class="th th-d">B</td><td class="th th-g">I</td>
-        <td class="th th-d">N</td><td class="th th-g">G</td>
-        <td class="th th-d">O</td>
-      </tr>
-    </thead>
-    <tbody>{{TABELA}}</tbody>
-  </table>
-</div>
+  <!-- ══ FAIXA INFO ══ -->
+  <div class="infobar">
+    <div class="info-item">
+      <svg viewBox="0 0 24 24" fill="none" class="icon"><path d="M12 21s-7-5.5-7-11a7 7 0 1 1 14 0c0 5.5-7 11-7 11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.8"/></svg>
+      <div>
+        <div class="info-label">LOCAL</div>
+        <div class="info-value">{{LOCAL}}</div>
+      </div>
+    </div>
+    <div class="info-item">
+      <svg viewBox="0 0 24 24" fill="none" class="icon"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18" stroke="currentColor" stroke-width="1.8"/><path d="M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <div>
+        <div class="info-label">DATA</div>
+        <div class="info-value">{{DATA}}</div>
+      </div>
+    </div>
+    <div class="info-item">
+      <svg viewBox="0 0 24 24" fill="none" class="icon"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div>
+        <div class="info-label">HORÁRIO</div>
+        <div class="info-value">{{HORARIO}}</div>
+      </div>
+    </div>
+  </div>
 
-<!-- FAIXA INFO -->
-<div style="background:#0D1F3C;border-radius:10px;display:flex;align-items:stretch;margin-bottom:14px;flex-shrink:0;overflow:hidden;">
-  <div style="flex:1;padding:12px 16px;border-right:1px solid rgba(255,255,255,.12);display:flex;align-items:center;gap:10px;">
-    <span style="font-size:20px;flex-shrink:0;">📅</span>
-    <div><div style="font-size:9px;font-weight:900;color:#E8A000;letter-spacing:2px;text-transform:uppercase;margin-bottom:2px;font-family:Arial,sans-serif;">DATA</div><div style="font-size:14px;font-weight:700;color:#fff;white-space:nowrap;font-family:Arial,sans-serif;">{{DATA}}</div></div>
+  <!-- ══ TESOURA ══ -->
+  <div class="scissors-line">
+    <svg viewBox="0 0 24 24" fill="none" class="scissors"><circle cx="6" cy="6" r="3" stroke="currentColor" stroke-width="1.8"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 8.5 19 19M8.5 15.5 19 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <div class="dash-line"></div>
   </div>
-  <div style="flex:1;padding:12px 16px;border-right:1px solid rgba(255,255,255,.12);display:flex;align-items:center;gap:10px;">
-    <span style="font-size:20px;flex-shrink:0;">⏰</span>
-    <div><div style="font-size:9px;font-weight:900;color:#E8A000;letter-spacing:2px;text-transform:uppercase;margin-bottom:2px;font-family:Arial,sans-serif;">HORÁRIO</div><div style="font-size:14px;font-weight:700;color:#fff;white-space:nowrap;font-family:Arial,sans-serif;">{{HORARIO}}</div></div>
-  </div>
-  <div style="flex:2;padding:12px 16px;border-right:1px solid rgba(255,255,255,.12);display:flex;align-items:center;gap:10px;min-width:0;">
-    <span style="font-size:20px;flex-shrink:0;">📍</span>
-    <div style="min-width:0;flex:1;"><div style="font-size:9px;font-weight:900;color:#E8A000;letter-spacing:2px;text-transform:uppercase;margin-bottom:2px;font-family:Arial,sans-serif;">LOCAL</div><div style="font-size:14px;font-weight:700;color:#fff;white-space:normal;line-height:1.3;font-family:Arial,sans-serif;">{{LOCAL}}</div></div>
-  </div>
-  <div style="background:#E8A000;padding:10px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;min-width:165px;">
-    <div style="font-size:9px;font-weight:900;color:#0D1F3C;letter-spacing:2px;text-transform:uppercase;margin-bottom:2px;font-family:Arial,sans-serif;">Valor da Cartela</div>
-    <div style="font-family:Impact,'Arial Black',Arial,sans-serif;font-size:32px;font-weight:900;color:#0D1F3C;letter-spacing:1px;line-height:1;">{{VALOR}}</div>
-  </div>
-</div>
 
-<!-- TESOURA -->
-<div style="display:flex;align-items:center;flex-shrink:0;padding:4px 0 12px;">
-  <div style="flex:1;border-top:2px dashed #b0bcd0;"></div>
-  <div style="display:flex;align-items:center;gap:6px;padding:0 14px;color:#aab;white-space:nowrap;">
-    <span style="font-size:14px;transform:rotate(-90deg);display:inline-block;">✂</span>
-    <span style="font-size:9px;letter-spacing:2px;font-weight:700;text-transform:uppercase;font-family:Arial,sans-serif;">Destaque aqui</span>
-    <span style="font-size:14px;transform:rotate(-90deg);display:inline-block;">✂</span>
-  </div>
-  <div style="flex:1;border-top:2px dashed #b0bcd0;"></div>
-</div>
+  <!-- ══ CANHOTO ══ -->
+  <div class="stub">
+    <div class="stub-tag">CANHOTO</div>
 
-<!-- CANHOTO -->
-<div style="background:#fff;border:2px solid #0D1F3C;border-radius:10px;display:flex;align-items:stretch;overflow:hidden;flex-shrink:0;">
-  <div style="background:#0D1F3C;color:#E8A000;font-size:10px;font-weight:900;writing-mode:vertical-rl;transform:rotate(180deg);padding:14px 9px;letter-spacing:3px;text-transform:uppercase;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:Arial,sans-serif;">CANHOTO</div>
-  <div style="flex:1;padding:14px 20px;display:flex;flex-direction:column;justify-content:space-between;gap:8px;">
-    <div style="font-family:Impact,'Arial Black',Arial,sans-serif;font-size:15px;color:#0D1F3C;letter-spacing:1px;">Nº <span style="color:#C0392B;font-size:18px;">{{NUMERO}}</span></div>
-    <div style="display:flex;align-items:flex-end;gap:8px;"><span style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#0D1F3C;white-space:nowrap;padding-bottom:3px;min-width:72px;">NOME:</span><div style="flex:1;border-bottom:1.5px solid #0D1F3C;min-height:22px;"></div></div>
-    <div style="display:flex;align-items:flex-end;gap:8px;"><span style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#0D1F3C;white-space:nowrap;padding-bottom:3px;min-width:72px;">TELEFONE:</span><div style="flex:1;border-bottom:1.5px solid #0D1F3C;min-height:22px;"></div></div>
-    <div style="display:flex;align-items:flex-end;gap:8px;"><span style="font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#0D1F3C;white-space:nowrap;padding-bottom:3px;min-width:72px;">ENDEREÇO:</span><div style="flex:1;border-bottom:1.5px solid #0D1F3C;min-height:22px;"></div></div>
-  </div>
-  <div style="background:#F2F5FA;border-left:2px solid #0D1F3C;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 18px;gap:2px;flex-shrink:0;min-width:110px;">
-    <div style="font-size:28px;line-height:1;margin-bottom:3px;">🎱</div>
-    <div style="font-family:Impact,'Arial Black',Arial,sans-serif;font-size:18px;font-weight:900;color:#0D1F3C;letter-spacing:3px;">BINGO</div>
-    <div style="font-size:11px;font-weight:700;color:#E8A000;font-style:italic;font-family:Arial,sans-serif;">Boa sorte! ♡</div>
-  </div>
-</div>
+    <div class="stub-content">
+      <div class="stub-num">
+        <svg viewBox="0 0 24 24" fill="none" class="icon"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 7v10" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2 2"/></svg>
+        <div>
+          <div class="stub-num-label">Nº</div>
+          <div class="stub-num-value">{{NUMERO}}</div>
+        </div>
+      </div>
 
+      <div class="stub-fields">
+        <div class="stub-field">
+          <svg viewBox="0 0 24 24" fill="none" class="stub-icon"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span class="stub-field-label">NOME</span>
+          <div class="stub-field-line"></div>
+        </div>
+        <div class="stub-field">
+          <svg viewBox="0 0 24 24" fill="none" class="stub-icon"><path d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 13l5 2v3a2 2 0 0 1-2 2A14 14 0 0 1 3 6a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          <span class="stub-field-label">TELEFONE</span>
+          <div class="stub-field-line"></div>
+        </div>
+        <div class="stub-field">
+          <svg viewBox="0 0 24 24" fill="none" class="stub-icon"><path d="M3 11 12 3l9 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-5h4v5h4a1 1 0 0 0 1-1v-9" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          <span class="stub-field-label">ENDEREÇO</span>
+          <div class="stub-field-line"></div>
+        </div>
+      </div>
+
+      <div class="stub-payment">
+        <div class="payment-box">
+          <div class="checkbox"></div>
+          <span>PAGO</span>
+        </div>
+        <div class="payment-box">
+          <div class="checkbox"></div>
+          <span>NÃO PAGO</span>
+        </div>
+      </div>
+
+      <div class="stub-meta">
+        <div>{{PREMIO}}</div>
+        <div class="stub-meta-value">{{VALOR}}</div>
+      </div>
+    </div>
+  </div>
+
+</div>
 </body>
-</html>`
+</html>
+`
 
 export default function TemplatePage() {
   const [html, setHtml] = useState(DEFAULT_TEMPLATE)
@@ -186,7 +363,6 @@ export default function TemplatePage() {
     }
   }
 
-  // Apaga o template salvo no Firestore e restaura o padrão local
   const handleReset = async () => {
     if (!confirm('Restaurar o template padrão? O template salvo será apagado.')) return
     try {
@@ -210,7 +386,7 @@ export default function TemplatePage() {
               <Code2 size={20} className="text-[#0D1F3C]" /> Editor de Template
             </h1>
             <p className="text-xs text-gray-500 mt-0.5">
-              Edite o HTML/CSS. Use <code className="bg-gray-100 px-1 rounded text-xs">{'{{QR_CODE}}'}</code> para o QR do prêmio.
+              Edite o HTML/CSS. Use <code className="bg-gray-100 px-1 rounded text-xs">{'{{IMAGEM_PREMIO}}'}</code> para a foto do prêmio.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -272,7 +448,7 @@ export default function TemplatePage() {
                     srcDoc={previewHtml}
                     title="Preview A4"
                     sandbox="allow-same-origin"
-                    style={{ width: 794, height: 1123, border: 'none', display: 'block', background: '#F2F5FA' }}
+                    style={{ width: 794, height: 1123, border: 'none', display: 'block', background: '#0a0a0a' }}
                   />
                 )}
               </div>
@@ -283,7 +459,7 @@ export default function TemplatePage() {
         {tab === 'editor' && (
           <div className="bg-gray-900 border-t border-gray-700 px-5 py-2.5 flex gap-3 flex-wrap items-center">
             <span className="text-xs text-gray-500 shrink-0">Variáveis:</span>
-            {['{{NUMERO}}','{{PREMIO}}','{{DATA}}','{{HORARIO}}','{{LOCAL}}','{{VALOR}}','{{QR_CODE}}','{{TABELA}}'].map(v => (
+            {['{{NUMERO}}','{{PREMIO}}','{{DATA}}','{{HORARIO}}','{{LOCAL}}','{{VALOR}}','{{IMAGEM_PREMIO}}','{{TABELA}}'].map(v => (
               <code key={v} onClick={() => copyVar(v)}
                 className="text-xs text-yellow-300 font-mono cursor-pointer hover:text-white hover:bg-yellow-700 px-1.5 py-0.5 rounded transition-colors select-none">
                 {v}

@@ -2,20 +2,43 @@ import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../services/firebase'
-import { Upload, Loader2, Link } from 'lucide-react'
+import { Upload, Loader2, ImageIcon } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import Layout from '../components/Layout'
-import { formatCurrency } from '../utils/currency'
 import BingoCardPreview from '../components/BingoCardPreview'
+import { formatCurrency } from '../utils/currency'
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/+$/, '')
 
+function imageFileToBase64(file, maxSize = 600) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const ratio = Math.min(maxSize / img.width, maxSize / img.height, 1)
+        canvas.width = img.width * ratio
+        canvas.height = img.height * ratio
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL('image/jpeg', 0.85))
+      }
+      img.onerror = reject
+      img.src = e.target.result
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
 export default function NewBingoPage() {
   const navigate = useNavigate()
+  const fileRef = useRef(null)
   const [submitting, setSubmitting] = useState(false)
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
   const [form, setForm] = useState({
     premio: '',
-    premioQrLink: '',
     data: '',
     horario: '',
     local: '',
@@ -25,6 +48,14 @@ export default function NewBingoPage() {
 
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
 
+  const handleImage = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) { toast.error('Selecione uma imagem válida.'); return }
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.premio || !form.data || !form.local || !form.valorCartela) {
@@ -33,8 +64,12 @@ export default function NewBingoPage() {
     }
     setSubmitting(true)
     try {
+      let premioImageBase64 = null
+      if (imageFile) premioImageBase64 = await imageFileToBase64(imageFile)
+
       const docRef = await addDoc(collection(db, 'bingos'), {
         ...form,
+        premioImageBase64,
         quantidadeCartelas: Number(form.quantidadeCartelas),
         status: 'processing',
         createdAt: serverTimestamp(),
@@ -48,6 +83,7 @@ export default function NewBingoPage() {
         body: JSON.stringify({
           bingoId: docRef.id,
           ...form,
+          premioImageBase64,
           quantidadeCartelas: Number(form.quantidadeCartelas),
         }),
       })
@@ -101,15 +137,17 @@ export default function NewBingoPage() {
                       className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]" required />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1 flex items-center gap-1.5">
-                      <Link size={14} /> Link para o QR Code do prêmio
-                    </label>
-                    <input type="url" value={form.premioQrLink} onChange={set('premioQrLink')}
-                      placeholder="https://seusite.com/galeria-do-premio"
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]" />
-                    <p className="text-xs text-gray-400 mt-1">
-                      O cliente escaneará este QR code na cartela para ver o prêmio
-                    </p>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Imagem do prêmio</label>
+                    <div onClick={() => fileRef.current?.click()}
+                      className="border-2 border-dashed border-gray-200 rounded-xl p-5 text-center cursor-pointer hover:border-[#0D1F3C] hover:bg-blue-50 transition-colors">
+                      {imagePreview
+                        ? <img src={imagePreview} alt="Preview" className="max-h-32 mx-auto rounded-lg object-contain" />
+                        : <div className="flex flex-col items-center gap-2 text-gray-400">
+                            <ImageIcon size={28} />
+                            <span className="text-sm">Clique para enviar uma foto</span>
+                          </div>}
+                      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
+                    </div>
                   </div>
                 </div>
               </section>
@@ -168,7 +206,7 @@ export default function NewBingoPage() {
 
             {/* Preview */}
             <div className="lg:sticky lg:top-8">
-              <BingoCardPreview form={form} />
+              <BingoCardPreview form={form} imagePreview={imagePreview} />
             </div>
           </div>
         </div>
