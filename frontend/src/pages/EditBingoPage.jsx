@@ -69,6 +69,7 @@ export default function EditBingoPage() {
   const [submitting, setSubmitting] = useState(false)
   const [saving, setSaving] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
+  const [progress, setProgress] = useState(null) // { done, total, current }
   const [totalGeradas, setTotalGeradas] = useState(0)
   const [imagePreviews, setImagePreviews] = useState([null, null, null])
   const [form, setForm] = useState({
@@ -134,28 +135,73 @@ export default function EditBingoPage() {
     e.preventDefault()
     if (!form.premio || !form.data || !form.local || !form.valorCartela) { toast.error('Preencha todos os campos.'); return }
     setSubmitting(true)
+
+    const CHUNK = 100
+    const total = Number(form.quantidadeCartelas)
+    const inicio = Number(form.cartelajInicio)
+    const premioImagens = imagePreviews.filter(Boolean)
+
+    // Monta os chunks: ex: 800 cartelas → 8 chunks de 100
+    const chunks = []
+    for (let i = 0; i < total; i += CHUNK) {
+      chunks.push({
+        inicio: inicio + i,
+        quantidade: Math.min(CHUNK, total - i),
+      })
+    }
+
+    setProgress({ done: 0, total: chunks.length, current: null })
+
     try {
-      const premioImagens = imagePreviews.filter(Boolean)
       await updateDoc(doc(db, 'bingos', id), {
         ...form, premioImagens, premioImageBase64: premioImagens[0] || null,
         status: 'processing', totalCartelas: cartelaFim, updatedAt: new Date(),
       })
-      const res = await fetch(`${API_URL}/api/bingo/gerar`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bingoId: id, ...form, premioImagens,
-          premioImageBase64: premioImagens[0] || null,
-          quantidadeCartelas: Number(form.quantidadeCartelas),
-          cartelajInicio: Number(form.cartelajInicio) }),
-      })
-      if (!res.ok) throw new Error((await res.json().catch(()=>({}))).detail || 'Falha')
-      const blob = await res.blob()
+
+      const { PDFDocument } = await import('https://cdn.skypack.dev/pdf-lib')
+      const mergedDoc = await PDFDocument.create()
+
+      for (let ci = 0; ci < chunks.length; ci++) {
+        const { inicio: chunkInicio, quantidade: chunkQtd } = chunks[ci]
+        const chunkFim = chunkInicio + chunkQtd - 1
+        setProgress({ done: ci, total: chunks.length, current: `${chunkInicio}–${chunkFim}` })
+
+        const res = await fetch(`${API_URL}/api/bingo/gerar`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bingoId: id, ...form, premioImagens,
+            premioImageBase64: premioImagens[0] || null,
+            quantidadeCartelas: chunkQtd,
+            cartelajInicio: chunkInicio,
+          }),
+        })
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `Falha no chunk ${ci + 1}`)
+
+        const arrayBuf = await res.arrayBuffer()
+        const chunkDoc = await PDFDocument.load(arrayBuf)
+        const pages = await mergedDoc.copyPages(chunkDoc, chunkDoc.getPageIndices())
+        pages.forEach(p => mergedDoc.addPage(p))
+
+        setProgress({ done: ci + 1, total: chunks.length, current: null })
+      }
+
+      const finalBytes = await mergedDoc.save()
+      const blob = new Blob([finalBytes], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob)
-      Object.assign(document.createElement('a'), { href: url, download: `bingo-${id}-${form.cartelajInicio}-${cartelaFim}.pdf` }).click()
+      Object.assign(document.createElement('a'), {
+        href: url,
+        download: `bingo-${id}-${inicio}-${cartelaFim}.pdf`,
+      }).click()
       URL.revokeObjectURL(url)
-      toast.success(`Cartelas ${form.cartelajInicio}–${cartelaFim} geradas!`)
+
+      toast.success(`${total} cartelas geradas com sucesso!`)
       navigate('/admin')
-    } catch (err) { toast.error(err.message || 'Erro.') }
-    finally { setSubmitting(false) }
+    } catch (err) {
+      toast.error(err.message || 'Erro ao gerar.')
+    } finally {
+      setSubmitting(false)
+      setProgress(null)
+    }
   }
 
   if (loading) return <Layout><div className="flex-1 flex items-center justify-center text-gray-400">Carregando…</div></Layout>
@@ -267,9 +313,30 @@ export default function EditBingoPage() {
                 </button>
                 <button type="submit" disabled={submitting || saving}
                   className="flex-1 flex items-center justify-center gap-2 bg-[#0D1F3C] hover:bg-[#162E58] text-white font-bold py-3.5 rounded-xl transition-colors disabled:opacity-60 text-base">
-                  {submitting ? <><Loader2 size={18} className="animate-spin"/> Gerando…</> : <><Plus size={18}/> Gerar PDF</>}
+                  {submitting
+                    ? progress
+                      ? <><Loader2 size={18} className="animate-spin"/> Lote {progress.done + (progress.current ? 1 : 0)}/{progress.total}{progress.current ? ` · ${progress.current}` : ''}</>
+                      : <><Loader2 size={18} className="animate-spin"/> Preparando…</>
+                    : <><Plus size={18}/> Gerar PDF</>}
                 </button>
               </div>
+
+              {/* Barra de progresso */}
+              {progress && (
+                <div className="space-y-2">
+                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                    <div
+                      className="bg-[#0D1F3C] h-3 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.round((progress.done / progress.total) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-center text-gray-500 font-medium">
+                    {progress.done === progress.total
+                      ? '✅ Montando PDF final…'
+                      : `Gerando lote ${progress.done + 1} de ${progress.total}${progress.current ? ` (cartelas ${progress.current})` : ''}…`}
+                  </p>
+                </div>
+              )}
             </form>
             <div className="lg:sticky lg:top-8">
               <BingoCardPreview form={form} imagePreviews={imagePreviews} />
