@@ -18,7 +18,7 @@ async function getTemplateFromFirestore() {
 
     // Se o template salvo não tem os placeholders da versão atual,
     // apaga automaticamente e usa o padrão do sistema
-    const requiredPlaceholders = ['{{PREMIO}}', '{{LOCAL}}', '{{DATA}}', '{{HORARIO}}', '{{CONTATO}}']
+    const requiredPlaceholders = ['{{PREMIO}}', '{{LOCAL}}', '{{DATA}}', '{{HORARIO}}', '{{CONTATO}}', '{{NUMERO}}', '{{TABELA}}']
     const hasMissing = requiredPlaceholders.some(p => !html.includes(p))
     if (hasMissing) {
       console.log('⚠️ Template salvo desatualizado — deletando e usando padrão do sistema')
@@ -95,6 +95,7 @@ router.post('/preview', async (req, res) => {
 
     // 1. Template enviado no body (editor de template)
     if (html) {
+      console.log('🖼 Preview: usando template do body (editor)')
       res.setHeader('Content-Type', 'text/html; charset=utf-8')
       return res.send(substitute(html, params))
     }
@@ -102,11 +103,13 @@ router.post('/preview', async (req, res) => {
     // 2. Template salvo no Firestore (com validação de placeholders)
     const savedHtml = await getTemplateFromFirestore()
     if (savedHtml) {
+      console.log('🖼 Preview: usando template do Firestore')
       res.setHeader('Content-Type', 'text/html; charset=utf-8')
       return res.send(substitute(savedHtml, params))
     }
 
     // 3. Fallback: template padrão do sistema (gerado pelo servidor)
+    console.log('🖼 Preview: usando template padrão do sistema')
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     res.send(gerarHTMLCartela({
       numero: 1, rows, premio, premioImageBase64,

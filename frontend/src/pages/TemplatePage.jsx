@@ -489,6 +489,8 @@ export default function TemplatePage() {
       setSaved(true);
       toast.success("Template salvo!");
       setTimeout(() => setSaved(false), 3000);
+      // Recarrega preview com o template recém salvo
+      if (tab === "preview") loadPreview(html);
     } catch {
       toast.error("Erro ao salvar. Verifique se o backend está online.");
     } finally {
