@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { db } from '../services/firebase'
-import { Loader2, Plus, ImagePlus, X } from 'lucide-react'
+import { Loader2, Plus, ImagePlus, X, Save, CheckCircle } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import Layout from '../components/Layout'
 import BingoCardPreview from '../components/BingoCardPreview'
@@ -67,6 +67,8 @@ export default function EditBingoPage() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
   const [totalGeradas, setTotalGeradas] = useState(0)
   const [imagePreviews, setImagePreviews] = useState([null, null, null])
   const [form, setForm] = useState({
@@ -233,12 +235,16 @@ export default function EditBingoPage() {
                 </div>
               </section>
 
-              <button type="submit" disabled={submitting}
-                className="w-full flex items-center justify-center gap-2 bg-[#0D1F3C] hover:bg-[#162E58] text-white font-bold py-3.5 rounded-xl transition-colors disabled:opacity-60 text-base">
-                {submitting
-                  ? <><Loader2 size={20} className="animate-spin" /> Gerando…</>
-                  : <><Plus size={20} /> Gerar cartelas {form.cartelajInicio}–{cartelaFim}</>}
-              </button>
+              <div className="flex gap-3">
+                <button type="button" onClick={handleSave} disabled={saving || submitting}
+                  className="flex-1 flex items-center justify-center gap-2 bg-white border-2 border-[#0D1F3C] text-[#0D1F3C] hover:bg-blue-50 font-bold py-3.5 rounded-xl transition-colors disabled:opacity-60 text-base">
+                  {saving ? <><Loader2 size={18} className="animate-spin"/> Salvando…</> : isSaved ? <><CheckCircle size={18}/> Salvo!</> : <><Save size={18}/> Salvar</>}
+                </button>
+                <button type="submit" disabled={submitting || saving}
+                  className="flex-1 flex items-center justify-center gap-2 bg-[#0D1F3C] hover:bg-[#162E58] text-white font-bold py-3.5 rounded-xl transition-colors disabled:opacity-60 text-base">
+                  {submitting ? <><Loader2 size={18} className="animate-spin"/> Gerando…</> : <><Plus size={18}/> Gerar PDF</>}
+                </button>
+              </div>
             </form>
             <div className="lg:sticky lg:top-8">
               <BingoCardPreview form={form} imagePreviews={imagePreviews} />

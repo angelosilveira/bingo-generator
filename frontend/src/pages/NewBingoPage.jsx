@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../services/firebase'
-import { Loader2, ImagePlus, X } from 'lucide-react'
+import { Loader2, ImagePlus, X, Save, CheckCircle } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import Layout from '../components/Layout'
 import BingoCardPreview from '../components/BingoCardPreview'
@@ -55,6 +55,8 @@ function ImageSlot({ index, preview, onSelect, onRemove }) {
 export default function NewBingoPage() {
   const navigate = useNavigate()
   const [submitting, setSubmitting] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [savedId, setSavedId] = useState(null)
   const [imagePreviews, setImagePreviews] = useState([null,null,null])
   const [form, setForm] = useState({ premio:'', contato:'', data:'', horario:'', local:'', valorCartela:'', quantidadeCartelas:100 })
 
@@ -66,24 +68,66 @@ export default function NewBingoPage() {
   }
   const removeImage = i => setImagePreviews(p => { const n=[...p]; n[i]=null; return n })
 
+  const handleSave = async () => {
+    if (!form.premio || !form.data || !form.local || !form.valorCartela) {
+      toast.error('Preencha os campos obrigatórios antes de salvar.')
+      return
+    }
+    setSaving(true)
+    try {
+      const premioImagens = imagePreviews.filter(Boolean)
+      if (savedId) {
+        // Atualiza o bingo já salvo
+        const { updateDoc, doc } = await import('firebase/firestore')
+        await updateDoc(doc(db, 'bingos', savedId), {
+          ...form, premioImagens, premioImageBase64: premioImagens[0] || null,
+          quantidadeCartelas: Number(form.quantidadeCartelas), updatedAt: new Date(),
+        })
+      } else {
+        // Cria novo bingo
+        const docRef = await addDoc(collection(db, 'bingos'), {
+          ...form, premioImagens, premioImageBase64: premioImagens[0] || null,
+          quantidadeCartelas: Number(form.quantidadeCartelas), status: 'draft', createdAt: serverTimestamp(),
+        })
+        setSavedId(docRef.id)
+      }
+      toast.success('Bingo salvo com sucesso!')
+    } catch (err) {
+      toast.error('Erro ao salvar.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const handleSubmit = async e => {
     e.preventDefault()
     if (!form.premio||!form.data||!form.local||!form.valorCartela) { toast.error('Preencha todos os campos.'); return }
     setSubmitting(true)
     try {
       const premioImagens = imagePreviews.filter(Boolean)
-      const docRef = await addDoc(collection(db,'bingos'), {
-        ...form, premioImagens, premioImageBase64: premioImagens[0]||null,
-        quantidadeCartelas: Number(form.quantidadeCartelas), status:'processing', createdAt: serverTimestamp(),
-      })
+      let bingoId = savedId
+      if (!bingoId) {
+        const docRef = await addDoc(collection(db,'bingos'), {
+          ...form, premioImagens, premioImageBase64: premioImagens[0]||null,
+          quantidadeCartelas: Number(form.quantidadeCartelas), status:'processing', createdAt: serverTimestamp(),
+        })
+        bingoId = docRef.id
+        setSavedId(bingoId)
+      } else {
+        const { updateDoc, doc } = await import('firebase/firestore')
+        await updateDoc(doc(db, 'bingos', bingoId), {
+          ...form, premioImagens, premioImageBase64: premioImagens[0]||null,
+          quantidadeCartelas: Number(form.quantidadeCartelas), status:'processing', updatedAt: new Date(),
+        })
+      }
       const res = await fetch(`${API_URL}/api/bingo/gerar`, {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ bingoId:docRef.id, ...form, premioImagens, premioImageBase64:premioImagens[0]||null, quantidadeCartelas:Number(form.quantidadeCartelas) }),
+        body: JSON.stringify({ bingoId, ...form, premioImagens, premioImageBase64:premioImagens[0]||null, quantidadeCartelas:Number(form.quantidadeCartelas) }),
       })
       if (!res.ok) throw new Error((await res.json().catch(()=>({}))).detail||'Falha')
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
-      Object.assign(document.createElement('a'),{href:url,download:`bingo-${docRef.id}.pdf`}).click()
+      Object.assign(document.createElement('a'),{href:url,download:`bingo-${bingoId}.pdf`}).click()
       URL.revokeObjectURL(url)
       toast.success(`${form.quantidadeCartelas} cartelas geradas!`)
       navigate('/admin')
@@ -163,10 +207,16 @@ export default function NewBingoPage() {
                 </div>
               </section>
 
-              <button type="submit" disabled={submitting}
-                className="w-full flex items-center justify-center gap-2 bg-[#0D1F3C] hover:bg-[#162E58] text-white font-bold py-3.5 rounded-xl transition-colors disabled:opacity-60 text-base">
-                {submitting ? <><Loader2 size={20} className="animate-spin"/> Gerando…</> : <>Gerar {form.quantidadeCartelas||'?'} cartelas em PDF</>}
-              </button>
+              <div className="flex gap-3">
+                <button type="button" onClick={handleSave} disabled={saving || submitting}
+                  className="flex-1 flex items-center justify-center gap-2 bg-white border-2 border-[#0D1F3C] text-[#0D1F3C] hover:bg-blue-50 font-bold py-3.5 rounded-xl transition-colors disabled:opacity-60 text-base">
+                  {saving ? <><Loader2 size={18} className="animate-spin"/> Salvando…</> : savedId ? <><CheckCircle size={18}/> Salvo</> : <><Save size={18}/> Salvar</>}
+                </button>
+                <button type="submit" disabled={submitting || saving}
+                  className="flex-1 flex items-center justify-center gap-2 bg-[#0D1F3C] hover:bg-[#162E58] text-white font-bold py-3.5 rounded-xl transition-colors disabled:opacity-60 text-base">
+                  {submitting ? <><Loader2 size={18} className="animate-spin"/> Gerando…</> : <>Gerar PDF</>}
+                </button>
+              </div>
             </form>
 
             <div className="lg:sticky lg:top-8">
