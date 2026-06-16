@@ -165,6 +165,8 @@ body { padding:14px; }
   min-height:0;
   overflow:hidden;
   border-top:1px solid var(--border);
+  gap:12px;
+  padding:12px;
 }
 
 /* 3 fotos empilhadas */
@@ -173,8 +175,8 @@ body { padding:14px; }
   flex-shrink:0;
   display:grid;
   grid-template-rows:1fr 1fr 1fr;
-  border-right:1px solid var(--border);
   overflow:hidden;
+  border-radius:10px;
 }
 .prize-img {
   width:100%;
@@ -184,7 +186,8 @@ body { padding:14px; }
   border-bottom:1px solid var(--border);
   min-height:0;
 }
-.prize-img:last-child { border-bottom:none; }
+.prize-img:first-child { border-radius:10px 10px 0 0; }
+.prize-img:last-child { border-bottom:none; border-radius:0 0 10px 10px; }
 .img-placeholder {
   width:100%;
   height:100%;
@@ -196,7 +199,8 @@ body { padding:14px; }
   border-bottom:1px solid var(--border);
   min-height:0;
 }
-.img-placeholder:last-child { border-bottom:none; }
+.img-placeholder:first-child { border-radius:10px 10px 0 0; }
+.img-placeholder:last-child { border-bottom:none; border-radius:0 0 10px 10px; }
 .img-placeholder i { font-size:30px; }
 
 /* Grade BINGO */
@@ -206,6 +210,8 @@ body { padding:14px; }
   flex-direction:column;
   min-width:0;
   overflow:hidden;
+  border:2px solid var(--blue);
+  border-radius:10px;
 }
 .bingo-header {
   display:grid;
@@ -250,6 +256,7 @@ body { padding:14px; }
 /* ── CANHOTO ── */
 .stub {
   padding:0 16px 14px;
+  margin-top:10px;
   flex-shrink:0;
 }
 .stub-title {
@@ -388,7 +395,7 @@ body { padding:14px; }
       </div>
       <div class="bingo-grid">
         {{TABELA}}
-      </div><div class="cell">16</div><div class="cell">32</div><div class="cell">48</div><div class="cell">62</div><div class="cell">4</div><div class="cell">21</div><div class="cell">34</div><div class="cell">50</div><div class="cell">72</div><div class="cell">6</div><div class="cell">23</div><div class="cell free"><i class="fa-solid fa-star"></i><span>LIVRE</span></div><div class="cell">57</div><div class="cell">73</div><div class="cell">10</div><div class="cell">24</div><div class="cell">39</div><div class="cell">58</div><div class="cell">74</div><div class="cell">12</div><div class="cell">28</div><div class="cell">43</div><div class="cell">60</div><div class="cell">75</div>
+      </div><div class="cell">20</div><div class="cell">36</div><div class="cell">46</div><div class="cell">64</div><div class="cell">6</div><div class="cell">24</div><div class="cell">38</div><div class="cell">47</div><div class="cell">68</div><div class="cell">8</div><div class="cell">25</div><div class="cell free"><i class="fa-solid fa-star"></i><span>LIVRE</span></div><div class="cell">56</div><div class="cell">71</div><div class="cell">10</div><div class="cell">26</div><div class="cell">39</div><div class="cell">59</div><div class="cell">72</div><div class="cell">11</div><div class="cell">28</div><div class="cell">42</div><div class="cell">60</div><div class="cell">74</div>
       </div>
     </div>
 

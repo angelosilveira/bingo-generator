@@ -280,6 +280,8 @@ body { padding:14px; }
   min-height:0;
   overflow:hidden;
   border-top:1px solid var(--border);
+  gap:12px;
+  padding:12px;
 }
 
 /* 3 fotos empilhadas */
@@ -288,8 +290,8 @@ body { padding:14px; }
   flex-shrink:0;
   display:grid;
   grid-template-rows:1fr 1fr 1fr;
-  border-right:1px solid var(--border);
   overflow:hidden;
+  border-radius:10px;
 }
 .prize-img {
   width:100%;
@@ -299,7 +301,8 @@ body { padding:14px; }
   border-bottom:1px solid var(--border);
   min-height:0;
 }
-.prize-img:last-child { border-bottom:none; }
+.prize-img:first-child { border-radius:10px 10px 0 0; }
+.prize-img:last-child { border-bottom:none; border-radius:0 0 10px 10px; }
 .img-placeholder {
   width:100%;
   height:100%;
@@ -311,7 +314,8 @@ body { padding:14px; }
   border-bottom:1px solid var(--border);
   min-height:0;
 }
-.img-placeholder:last-child { border-bottom:none; }
+.img-placeholder:first-child { border-radius:10px 10px 0 0; }
+.img-placeholder:last-child { border-bottom:none; border-radius:0 0 10px 10px; }
 .img-placeholder i { font-size:30px; }
 
 /* Grade BINGO */
@@ -321,6 +325,8 @@ body { padding:14px; }
   flex-direction:column;
   min-width:0;
   overflow:hidden;
+  border:2px solid var(--blue);
+  border-radius:10px;
 }
 .bingo-header {
   display:grid;
@@ -365,6 +371,7 @@ body { padding:14px; }
 /* ── CANHOTO ── */
 .stub {
   padding:0 16px 14px;
+  margin-top:10px;
   flex-shrink:0;
 }
 .stub-title {
