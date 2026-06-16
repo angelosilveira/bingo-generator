@@ -105,7 +105,32 @@ export default function EditBingoPage() {
 
   const cartelaFim = Number(form.cartelajInicio) + Number(form.quantidadeCartelas) - 1
 
-  const handleSubmit = async (e) => {
+  const handleSave = async () => {
+    if (!form.premio || !form.data || !form.local || !form.valorCartela) {
+      toast.error('Preencha os campos obrigatórios.')
+      return
+    }
+    setSaving(true)
+    try {
+      const premioImagens = imagePreviews.filter(Boolean)
+      await updateDoc(doc(db, 'bingos', id), {
+        ...form,
+        premioImagens,
+        premioImageBase64: premioImagens[0] || null,
+        quantidadeCartelas: Number(form.quantidadeCartelas),
+        updatedAt: new Date(),
+      })
+      setIsSaved(true)
+      toast.success('Bingo salvo!')
+      setTimeout(() => setIsSaved(false), 3000)
+    } catch {
+      toast.error('Erro ao salvar.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+    const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.premio || !form.data || !form.local || !form.valorCartela) { toast.error('Preencha todos os campos.'); return }
     setSubmitting(true)
