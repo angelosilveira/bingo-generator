@@ -12,7 +12,21 @@ async function getTemplateFromFirestore() {
       db.collection('config').doc('template').get(),
       new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
     ])
-    if (snap.exists && snap.data().html) return snap.data().html
+    if (!snap.exists || !snap.data().html) return null
+
+    const html = snap.data().html
+
+    // Se o template salvo não tem os placeholders da versão atual,
+    // apaga automaticamente e usa o padrão do sistema
+    const requiredPlaceholders = ['{{PREMIO}}', '{{LOCAL}}', '{{DATA}}', '{{HORARIO}}', '{{CONTATO}}']
+    const hasMissing = requiredPlaceholders.some(p => !html.includes(p))
+    if (hasMissing) {
+      console.log('⚠️ Template salvo desatualizado — deletando e usando padrão do sistema')
+      await db.collection('config').doc('template').delete().catch(() => {})
+      return null
+    }
+
+    return html
   } catch {}
   return null
 }
@@ -79,19 +93,25 @@ router.post('/preview', async (req, res) => {
     const gridHTML = buildGrid(rows)
     const params = { premio, dataFormatada, horario, local, valorCartela, contato, premioImg, gridHTML }
 
+    // 1. Template enviado no body (editor de template)
     if (html) {
       res.setHeader('Content-Type', 'text/html; charset=utf-8')
       return res.send(substitute(html, params))
     }
 
+    // 2. Template salvo no Firestore (com validação de placeholders)
     const savedHtml = await getTemplateFromFirestore()
     if (savedHtml) {
       res.setHeader('Content-Type', 'text/html; charset=utf-8')
       return res.send(substitute(savedHtml, params))
     }
 
+    // 3. Fallback: template padrão do sistema (gerado pelo servidor)
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    res.send(gerarHTMLCartela({ numero: 1, rows, premio, premioImageBase64, premioImagens, data, horario, local, valorCartela, contato }))
+    res.send(gerarHTMLCartela({
+      numero: 1, rows, premio, premioImageBase64,
+      premioImagens, data, horario, local, valorCartela, contato,
+    }))
   } catch (err) {
     console.error('❌ Preview:', err.message)
     res.status(500).json({ error: err.message })
