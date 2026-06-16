@@ -6,10 +6,6 @@ import { fmtValor } from '../utils/format.js'
 
 const router = express.Router()
 
-const GIFT_ICON = `<svg viewBox="0 0 24 24" fill="none" class="gift-icon"><rect x="3" y="9" width="18" height="11" rx="1" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18v3H3V9Z" fill="currentColor" opacity=".25"/><path d="M12 9v11" stroke="currentColor" stroke-width="1.8"/><path d="M12 9C12 9 9 9 8 7.5C7.2 6.3 8 5 9.3 5C11 5 12 7 12 9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 9C12 9 15 9 16 7.5C16.8 6.3 16 5 14.7 5C13 5 12 7 12 9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`
-
-const GIFT_ICON_LG = `<svg viewBox="0 0 24 24" fill="none" class="gift-icon-lg"><rect x="3" y="9" width="18" height="11" rx="1" stroke="currentColor" stroke-width="1.5"/><path d="M3 9h18v3H3V9Z" fill="currentColor" opacity=".2"/><path d="M12 9v11" stroke="currentColor" stroke-width="1.5"/><path d="M12 9C12 9 9 9 8 7.5C7.2 6.3 8 5 9.3 5C11 5 12 7 12 9Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 9C12 9 15 9 16 7.5C16.8 6.3 16 5 14.7 5C13 5 12 7 12 9Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`
-
 async function getTemplateFromFirestore() {
   try {
     const snap = await Promise.race([
@@ -21,6 +17,24 @@ async function getTemplateFromFirestore() {
   return null
 }
 
+function buildTabelaHTML(rows) {
+  return rows.map(row =>
+    `<div style="display:contents">${row.map(cell =>
+      `<div class="cell${cell.free ? ' free' : ''}">${
+        cell.free
+          ? `<i class="fa-solid fa-star"></i><span>LIVRE</span>`
+          : cell.value
+      }</div>`
+    ).join('')}</div>`
+  ).join('')
+}
+
+function buildPremioImg(premioImageBase64) {
+  return premioImageBase64
+    ? `<img src="${premioImageBase64}" alt="Prêmio" />`
+    : `<div class="img-placeholder"><i class="fa-solid fa-image"></i><span>FOTO DO PRÊMIO</span></div>`
+}
+
 function substitute(tmpl, { premio, dataFormatada, horario, local, valorCartela, premioImg, tabelaHTML }) {
   return tmpl
     .replace(/{{NUMERO}}/g, '0001')
@@ -30,14 +44,14 @@ function substitute(tmpl, { premio, dataFormatada, horario, local, valorCartela,
     .replace(/{{LOCAL}}/g, local || 'Clube Recreativo Central')
     .replace(/{{VALOR}}/g, fmtValor(valorCartela) || 'R$ 10,00')
     .replace(/{{IMAGEM_PREMIO}}/g, premioImg)
-    .replace(/{{QR_CODE}}/g, premioImg) // retrocompat
+    .replace(/{{QR_CODE}}/g, premioImg)
     .replace(/{{TABELA}}/g, tabelaHTML)
 }
 
 router.get('/', async (req, res) => {
   try {
     const savedHtml = await getTemplateFromFirestore()
-    res.json({ html: savedHtml })
+    res.json({ html: savedHtml || null })
   } catch {
     res.json({ html: null })
   }
@@ -72,16 +86,8 @@ router.post('/preview', async (req, res) => {
       ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')
       : new Date().toLocaleDateString('pt-BR')
 
-    const premioImg = premioImageBase64
-      ? `<img src="${premioImageBase64}" class="prize-photo" />`
-      : `<div class="prize-photo prize-photo-empty">${GIFT_ICON_LG}</div>`
-
-    const tabelaHTML = rows.map(row =>
-      `<tr>${row.map(cell =>
-        `<td class="cell${cell.free ? ' cell-free' : ''}">${cell.free ? GIFT_ICON : cell.value}</td>`
-      ).join('')}</tr>`
-    ).join('')
-
+    const premioImg = buildPremioImg(premioImageBase64)
+    const tabelaHTML = buildTabelaHTML(rows)
     const params = { premio, dataFormatada, horario, local, valorCartela, premioImg, tabelaHTML }
 
     if (html) {

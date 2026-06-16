@@ -6,305 +6,331 @@ import Layout from '../components/Layout'
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/+$/, '')
 
 const DEFAULT_TEMPLATE = `<!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
 <meta charset="UTF-8"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 <style>
 
-  * { margin:0; padding:0; box-sizing:border-box; }
-  html, body { width:794px; height:1123px; background:#0a0a0a; font-family:'Arial',sans-serif; overflow:hidden; }
-  body { padding:18px; }
+:root {
+  --blue: #0D47C8;
+  --green: #0F9D58;
+  --border: #DCE5F5;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:794px; height:1123px; background:#ECEFF3; font-family:Arial,Helvetica,sans-serif; overflow:hidden; }
+body { padding:14px; }
 
-  .card {
-    width:100%; height:100%;
-    background: linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 100%);
-    border: 1.5px solid #C9A227;
-    border-radius: 16px;
-    display:flex; flex-direction:column;
-    overflow:hidden;
-    position:relative;
-  }
+.ticket {
+  width:766px; height:1095px;
+  background:#fff;
+  border-radius:20px;
+  overflow:hidden;
+  border:1px solid var(--border);
+  display:flex; flex-direction:column;
+}
 
-  .icon { width:18px; height:18px; color:#C9A227; flex-shrink:0; }
-  .stub-icon { width:15px; height:15px; color:#C9A227; flex-shrink:0; }
-  .gift-icon { width:26px; height:26px; color:#0d0d0d; }
-  .gift-icon-lg { width:48px; height:48px; color:#C9A227; opacity:.5; }
+/* ── HEADER ── */
+.header {
+  background:var(--blue);
+  color:#fff;
+  padding:20px 28px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-shrink:0;
+}
+.header-left h1 {
+  font-size:72px; font-weight:900; line-height:.9;
+}
+.header-left .premio-sub {
+  display:block;
+  font-size:20px; font-weight:700;
+  margin-top:10px;
+  opacity:.92;
+}
+.header-right {
+  display:flex;
+  align-items:center;
+  gap:24px;
+  border-left:1px solid rgba(255,255,255,.3);
+  padding-left:24px;
+}
+.info-col {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.info-row {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.info-row i { font-size:18px; opacity:.85; flex-shrink:0; }
+.info-row small { display:block; font-size:9px; font-weight:700; letter-spacing:1.5px; opacity:.75; text-transform:uppercase; }
+.info-row strong { display:block; font-size:15px; font-weight:700; line-height:1.1; }
 
-  /* ══ MAIN ══ */
-  .main { flex:1; display:flex; gap:18px; padding:22px 22px 14px; min-height:0; }
+.num-block {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  border-left:1px solid rgba(255,255,255,.3);
+  padding-left:20px;
+}
+.num-block i { font-size:36px; opacity:.85; }
+.num-block small { display:block; font-size:10px; font-weight:700; letter-spacing:1.5px; opacity:.75; }
+.num-block strong { display:block; font-size:52px; font-weight:900; line-height:1; }
 
-  .left {
-    width: 300px; flex-shrink:0;
-    display:flex; flex-direction:column; gap:10px;
-  }
+/* ── MAIN SECTION ── */
+.main-section {
+  display:flex;
+  gap:14px;
+  padding:14px 16px;
+  flex:1;
+  min-height:0;
+}
 
-  .num-tag {
-    display:flex; align-items:center; gap:10px;
-    background: rgba(201,162,39,.08);
-    border:1px solid rgba(201,162,39,.35);
-    border-radius:10px; padding:10px 14px;
-  }
-  .num-label { font-size:9px; font-weight:900; color:#C9A227; letter-spacing:2px; }
-  .num-value { font-family:Impact,'Arial Black',Arial,sans-serif; font-size:26px; color:#fff; letter-spacing:2px; line-height:1.1; }
+.prize-image {
+  width:290px; flex-shrink:0;
+  border-radius:14px;
+  overflow:hidden;
+  border:1px solid var(--border);
+}
+.prize-image img {
+  width:100%; height:100%; object-fit:cover;
+}
+.img-placeholder {
+  width:100%; height:100%;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:10px;
+  background:#F5F7FB;
+  color:#A0AABB;
+}
+.img-placeholder i { font-size:40px; }
+.img-placeholder span { font-size:11px; font-weight:700; letter-spacing:2px; }
 
-  .prize-label {
-    display:inline-block;
-    background: linear-gradient(90deg,#C9A227,#E8C158);
-    color:#0d0d0d;
-    font-size:10px; font-weight:900; letter-spacing:3px;
-    padding:5px 14px; border-radius:6px;
-    width:fit-content;
-    margin-top:4px;
-  }
-  .prize-name {
-    font-family:Impact,'Arial Black',Arial,sans-serif;
-    font-size:21px; color:#fff; line-height:1.2;
-    word-break:break-word;
-  }
+.bingo-section {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
 
-  .prize-photo {
-    width:100%; height:175px; object-fit:cover;
-    border-radius:10px; border:1.5px solid rgba(201,162,39,.4);
-    margin-top:2px;
-  }
-  .prize-photo-empty {
-    display:flex; align-items:center; justify-content:center;
-    background:rgba(255,255,255,.03);
-    border:1.5px dashed rgba(201,162,39,.3);
-  }
+.bingo-header {
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  flex-shrink:0;
+}
+.bingo-header div {
+  background:var(--blue);
+  color:#fff;
+  height:52px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:34px; font-weight:900;
+}
+.bingo-header div:first-child { border-radius:10px 0 0 0; }
+.bingo-header div:last-child  { border-radius:0 10px 0 0; }
 
-  .prize-value {
-    font-family:Impact,'Arial Black',Arial,sans-serif;
-    font-size:34px;
-    background: linear-gradient(90deg,#E8C158,#C9A227);
-    -webkit-background-clip:text; background-clip:text; color:transparent;
-    letter-spacing:1px; line-height:1; margin-top:auto;
-  }
-  .prize-value-sub {
-    font-size:9px; font-weight:900; color:#888; letter-spacing:3px; margin-top:2px;
-  }
+.bingo-grid {
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  flex:1;
+}
+.cell {
+  border:1px solid var(--border);
+  display:flex; align-items:center; justify-content:center;
+  font-size:42px; font-weight:900; color:#1a1a2e;
+}
+.cell.free {
+  flex-direction:column;
+  color:var(--blue);
+  gap:4px;
+  font-size:14px;
+}
+.cell.free i { font-size:30px; }
+.cell.free span { font-size:13px; font-weight:800; letter-spacing:1px; }
 
-  /* ══ RIGHT / BINGO TABLE ══ */
-  .right { flex:1; display:flex; flex-direction:column; min-width:0; }
+/* ── VALOR BAR ── */
+.valor-bar {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:#F5F7FB;
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  padding:10px 22px;
+  flex-shrink:0;
+}
+.valor-label {
+  font-size:13px; font-weight:800;
+  color:var(--blue);
+  letter-spacing:1px;
+  display:flex; align-items:center; gap:8px;
+}
+.valor-label i { font-size:16px; }
+.valor-num {
+  font-size:32px; font-weight:900;
+  color:var(--green);
+}
 
-  .bingo-title {
-    display:flex; align-items:center; justify-content:center; gap:18px;
-    margin-bottom:14px;
-  }
-  .bingo-text {
-    font-family:Impact,'Arial Black',Arial,sans-serif;
-    font-size:54px; letter-spacing:14px;
-    background: linear-gradient(180deg,#F5DA8C,#C9A227);
-    -webkit-background-clip:text; background-clip:text; color:transparent;
-  }
-  .dot { width:8px; height:8px; border-radius:50%; background:#C9A227; flex-shrink:0; }
+/* ── CANHOTO ── */
+.stub {
+  padding:0 16px 12px;
+  flex-shrink:0;
+}
+.stub-title {
+  text-align:center;
+  color:var(--blue);
+  font-size:13px; font-weight:800;
+  border-top:2px dashed var(--blue);
+  padding-top:8px;
+  margin-bottom:10px;
+  letter-spacing:2px;
+}
+.stub-content {
+  border:1px solid var(--border);
+  border-radius:14px;
+  display:grid;
+  grid-template-columns:160px 1fr 200px;
+}
+.stub-content > div {
+  padding:16px 20px;
+}
+.stub-content > div:not(:last-child) {
+  border-right:1px dashed #cbd5e1;
+}
+.stub-number small { display:block; font-size:9px; font-weight:700; letter-spacing:2px; color:var(--blue); margin-bottom:6px; }
+.stub-number strong { font-size:44px; font-weight:900; color:var(--blue); }
 
-  .grid { flex:1; width:100%; border-collapse:collapse; }
-  .grid tr { height:20%; }
-  .cell {
-    border:1px solid rgba(201,162,39,.45);
-    text-align:center; vertical-align:middle;
-    font-family:Impact,'Arial Black',Arial,sans-serif;
-    font-size:32px; color:#1a1a1a;
-    background: #FAF6EC;
-  }
-  .cell-free {
-    background: #F0E4C0;
-    position:relative;
-  }
-  .cell-free .gift-icon { color:#0d0d0d; }
+.stub-form {
+  display:flex; flex-direction:column;
+  justify-content:center; gap:18px;
+  font-size:13px; font-weight:600; color:#333;
+}
+.stub-form i { color:var(--blue); margin-right:6px; }
+.line {
+  display:inline-block;
+  border-bottom:1.5px solid #999;
+  width:55%;
+  margin-left:6px;
+  vertical-align:bottom;
+}
 
-  /* ══ INFO BAR ══ */
-  .infobar {
-    display:flex; gap:0;
-    border-top:1px solid rgba(201,162,39,.25);
-    padding:12px 22px;
-  }
-  .info-item {
-    flex:1; display:flex; align-items:center; gap:10px;
-    padding-right:16px;
-  }
-  .info-label { font-size:9px; font-weight:900; color:#C9A227; letter-spacing:2px; margin-bottom:2px; }
-  .info-value { font-size:13px; font-weight:700; color:#fff; line-height:1.3; }
-
-  /* ══ SCISSORS ══ */
-  .scissors-line {
-    display:flex; align-items:center; gap:10px;
-    padding:0 22px; margin:4px 0;
-  }
-  .scissors { width:18px; height:18px; color:#C9A227; flex-shrink:0; transform:rotate(90deg); }
-  .dash-line { flex:1; border-top:1.5px dashed rgba(201,162,39,.35); }
-
-  /* ══ STUB / CANHOTO ══ */
-  .stub {
-    display:flex; align-items:stretch;
-    border:1px solid rgba(201,162,39,.35);
-    border-radius:10px;
-    margin:6px 22px 18px;
-    overflow:hidden;
-    background: rgba(255,255,255,.015);
-  }
-  .stub-tag {
-    background: linear-gradient(180deg,#E8C158,#C9A227);
-    color:#0d0d0d;
-    font-size:10px; font-weight:900; letter-spacing:3px;
-    writing-mode:vertical-rl; transform:rotate(180deg);
-    display:flex; align-items:center; justify-content:center;
-    padding:10px 8px; flex-shrink:0;
-  }
-  .stub-content {
-    flex:1; display:flex; align-items:center; gap:18px;
-    padding:12px 18px;
-  }
-  .stub-num { display:flex; align-items:center; gap:8px; flex-shrink:0; }
-  .stub-num-label { font-size:8px; font-weight:900; color:#C9A227; letter-spacing:2px; }
-  .stub-num-value { font-family:Impact,'Arial Black',Arial,sans-serif; font-size:18px; color:#fff; }
-
-  .stub-fields { flex:1.4; display:flex; flex-direction:column; gap:7px; }
-  .stub-field { display:flex; align-items:center; gap:6px; }
-  .stub-field-label { font-size:9px; font-weight:900; color:#999; letter-spacing:1.5px; flex-shrink:0; width:62px; }
-  .stub-field-line { flex:1; border-bottom:1px solid rgba(201,162,39,.4); height:1px; }
-
-  .stub-payment { display:flex; flex-direction:column; gap:6px; flex-shrink:0; }
-  .payment-box { display:flex; align-items:center; gap:6px; }
-  .checkbox { width:13px; height:13px; border:1.5px solid #C9A227; border-radius:3px; flex-shrink:0; }
-  .payment-box span { font-size:9px; font-weight:900; color:#ccc; letter-spacing:1.5px; }
-
-  .stub-meta { flex-shrink:0; text-align:right; min-width:90px; }
-  .stub-meta div:first-child { font-size:10px; color:#999; font-weight:700; max-width:90px; word-break:break-word; line-height:1.2; }
-  .stub-meta-value {
-    font-family:Impact,'Arial Black',Arial,sans-serif;
-    font-size:18px;
-    background: linear-gradient(90deg,#E8C158,#C9A227);
-    -webkit-background-clip:text; background-clip:text; color:transparent;
-    margin-top:2px;
-  }
+.stub-right {
+  display:flex; flex-direction:column;
+  justify-content:space-between;
+}
+.stub-payment {
+  display:flex; flex-direction:column; gap:10px;
+}
+.stub-payment label {
+  display:flex; align-items:center; gap:8px;
+  font-size:11px; font-weight:900; letter-spacing:1.5px; color:#333;
+  cursor:default;
+}
+.chk {
+  display:inline-block;
+  width:14px; height:14px;
+  border:2px solid #1a1a2e;
+  border-radius:3px;
+  flex-shrink:0;
+}
+.stub-price small { display:block; font-size:9px; font-weight:700; letter-spacing:2px; color:var(--blue); margin-bottom:4px; }
+.stub-price strong { font-size:24px; font-weight:900; color:var(--green); }
 
 </style>
 </head>
 <body>
-<div class="card">
+<div class="ticket">
 
-  <!-- ══ PARTE PRINCIPAL ══ -->
-  <div class="main">
-
-    <!-- Coluna esquerda -->
-    <div class="left">
-      <div class="num-tag">
-        <svg viewBox="0 0 24 24" fill="none" class="icon"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 7v10" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2 2"/></svg>
-        <div>
-          <div class="num-label">CARTELA Nº</div>
-          <div class="num-value">{{NUMERO}}</div>
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <h1>BINGO</h1>
+      <span class="premio-sub">{{PREMIO}}</span>
+    </div>
+    <div class="header-right">
+      <div class="info-col">
+        <div class="info-row">
+          <i class="fa-solid fa-location-dot"></i>
+          <div><small>LOCAL</small><strong>{{LOCAL}}</strong></div>
+        </div>
+        <div class="info-row">
+          <i class="fa-solid fa-calendar"></i>
+          <div><small>DATA</small><strong>{{DATA}}</strong></div>
+        </div>
+        <div class="info-row">
+          <i class="fa-solid fa-clock"></i>
+          <div><small>HORÁRIO</small><strong>{{HORARIO}}</strong></div>
         </div>
       </div>
+      <div class="num-block">
+        <i class="fa-solid fa-ticket"></i>
+        <div>
+          <small>CARTELA Nº</small>
+          <strong>{{NUMERO}}</strong>
+        </div>
+      </div>
+    </div>
+  </header>
 
-      <div class="prize-label">PRÊMIO</div>
-      <div class="prize-name">{{PREMIO}}</div>
+  <!-- PRIZE + BINGO -->
+  <section class="main-section">
 
+    <div class="prize-image">
       {{IMAGEM_PREMIO}}
-
-      <div class="prize-value">{{VALOR}}</div>
-      <div class="prize-value-sub">VALOR DA CARTELA</div>
     </div>
 
-    <!-- Coluna direita -->
-    <div class="right">
-      <div class="bingo-title">
-        <span class="dot"></span>
-        <span class="bingo-text">B I N G O</span>
-        <span class="dot"></span>
+    <div class="bingo-section">
+      <div class="bingo-header">
+        <div>B</div><div>I</div><div>N</div><div>G</div><div>O</div>
+      </div>
+      <div class="bingo-grid">
+        {{TABELA}}
       </div>
 
-      <table class="grid">
-        <tbody>{{TABELA}}</tbody>
-      </table>
-    </div>
+  </section>
+
+  <!-- VALOR -->
+  <div class="valor-bar">
+    <span class="valor-label"><i class="fa-solid fa-tag"></i> VALOR DA CARTELA</span>
+    <span class="valor-num">{{VALOR}}</span>
   </div>
 
-  <!-- ══ FAIXA INFO ══ -->
-  <div class="infobar">
-    <div class="info-item">
-      <svg viewBox="0 0 24 24" fill="none" class="icon"><path d="M12 21s-7-5.5-7-11a7 7 0 1 1 14 0c0 5.5-7 11-7 11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.8"/></svg>
-      <div>
-        <div class="info-label">LOCAL</div>
-        <div class="info-value">{{LOCAL}}</div>
-      </div>
-    </div>
-    <div class="info-item">
-      <svg viewBox="0 0 24 24" fill="none" class="icon"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18" stroke="currentColor" stroke-width="1.8"/><path d="M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <div>
-        <div class="info-label">DATA</div>
-        <div class="info-value">{{DATA}}</div>
-      </div>
-    </div>
-    <div class="info-item">
-      <svg viewBox="0 0 24 24" fill="none" class="icon"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <div>
-        <div class="info-label">HORÁRIO</div>
-        <div class="info-value">{{HORARIO}}</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ TESOURA ══ -->
-  <div class="scissors-line">
-    <svg viewBox="0 0 24 24" fill="none" class="scissors"><circle cx="6" cy="6" r="3" stroke="currentColor" stroke-width="1.8"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 8.5 19 19M8.5 15.5 19 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-    <div class="dash-line"></div>
-  </div>
-
-  <!-- ══ CANHOTO ══ -->
-  <div class="stub">
-    <div class="stub-tag">CANHOTO</div>
-
+  <!-- CANHOTO -->
+  <section class="stub">
+    <div class="stub-title">✂ CANHOTO</div>
     <div class="stub-content">
-      <div class="stub-num">
-        <svg viewBox="0 0 24 24" fill="none" class="icon"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 7v10" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2 2"/></svg>
-        <div>
-          <div class="stub-num-label">Nº</div>
-          <div class="stub-num-value">{{NUMERO}}</div>
+
+      <div class="stub-number">
+        <small>Nº DA CARTELA</small>
+        <strong>{{NUMERO}}</strong>
+      </div>
+
+      <div class="stub-form">
+        <div><i class="fa-solid fa-user"></i> Nome: <span class="line"></span></div>
+        <div><i class="fa-solid fa-phone"></i> Telefone: <span class="line"></span></div>
+        <div><i class="fa-solid fa-house"></i> Endereço: <span class="line"></span></div>
+      </div>
+
+      <div class="stub-right">
+        <div class="stub-payment">
+          <label><span class="chk"></span> PAGO</label>
+          <label><span class="chk"></span> NÃO PAGO</label>
+        </div>
+        <div class="stub-price">
+          <small>VALOR DA CARTELA</small>
+          <strong>{{VALOR}}</strong>
         </div>
       </div>
 
-      <div class="stub-fields">
-        <div class="stub-field">
-          <svg viewBox="0 0 24 24" fill="none" class="stub-icon"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          <span class="stub-field-label">NOME</span>
-          <div class="stub-field-line"></div>
-        </div>
-        <div class="stub-field">
-          <svg viewBox="0 0 24 24" fill="none" class="stub-icon"><path d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 13l5 2v3a2 2 0 0 1-2 2A14 14 0 0 1 3 6a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-          <span class="stub-field-label">TELEFONE</span>
-          <div class="stub-field-line"></div>
-        </div>
-        <div class="stub-field">
-          <svg viewBox="0 0 24 24" fill="none" class="stub-icon"><path d="M3 11 12 3l9 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-5h4v5h4a1 1 0 0 0 1-1v-9" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-          <span class="stub-field-label">ENDEREÇO</span>
-          <div class="stub-field-line"></div>
-        </div>
-      </div>
-
-      <div class="stub-payment">
-        <div class="payment-box">
-          <div class="checkbox"></div>
-          <span>PAGO</span>
-        </div>
-        <div class="payment-box">
-          <div class="checkbox"></div>
-          <span>NÃO PAGO</span>
-        </div>
-      </div>
-
-      <div class="stub-meta">
-        <div>{{PREMIO}}</div>
-        <div class="stub-meta-value">{{VALOR}}</div>
-      </div>
     </div>
-  </div>
+  </section>
 
 </div>
 </body>
-</html>
-`
+</html>`
 
 export default function TemplatePage() {
   const [html, setHtml] = useState(DEFAULT_TEMPLATE)
