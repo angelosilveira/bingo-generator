@@ -163,6 +163,7 @@ body { padding:14px; }
   display:flex;
   flex:1;
   min-height:0;
+  overflow:hidden;
   border-top:1px solid var(--border);
 }
 
@@ -170,27 +171,30 @@ body { padding:14px; }
 .prize-col {
   width:220px;
   flex-shrink:0;
-  display:flex;
-  flex-direction:column;
+  display:grid;
+  grid-template-rows:1fr 1fr 1fr;
   border-right:1px solid var(--border);
+  overflow:hidden;
 }
 .prize-img {
-  flex:1;
   width:100%;
-  min-height:0;
+  height:100%;
   object-fit:cover;
   display:block;
   border-bottom:1px solid var(--border);
+  min-height:0;
 }
 .prize-img:last-child { border-bottom:none; }
 .img-placeholder {
-  flex:1;
+  width:100%;
+  height:100%;
   display:flex;
   align-items:center;
   justify-content:center;
   background:#F5F7FB;
   color:#C0C8D8;
   border-bottom:1px solid var(--border);
+  min-height:0;
 }
 .img-placeholder:last-child { border-bottom:none; }
 .img-placeholder i { font-size:30px; }
@@ -201,6 +205,7 @@ body { padding:14px; }
   display:flex;
   flex-direction:column;
   min-width:0;
+  overflow:hidden;
 }
 .bingo-header {
   display:grid;
@@ -220,7 +225,10 @@ body { padding:14px; }
 .bingo-grid {
   display:grid;
   grid-template-columns:repeat(5,1fr);
+  grid-template-rows:repeat(5,1fr);
   flex:1;
+  min-height:0;
+  overflow:hidden;
 }
 .cell {
   border:1px solid var(--border);
@@ -380,7 +388,7 @@ body { padding:14px; }
       </div>
       <div class="bingo-grid">
         {{TABELA}}
-      </div><div class="cell">16</div><div class="cell">32</div><div class="cell">46</div><div class="cell">64</div><div class="cell">7</div><div class="cell">24</div><div class="cell">33</div><div class="cell">50</div><div class="cell">67</div><div class="cell">8</div><div class="cell">26</div><div class="cell free"><i class="fa-solid fa-star"></i><span>LIVRE</span></div><div class="cell">51</div><div class="cell">72</div><div class="cell">11</div><div class="cell">27</div><div class="cell">42</div><div class="cell">55</div><div class="cell">74</div><div class="cell">12</div><div class="cell">30</div><div class="cell">45</div><div class="cell">60</div><div class="cell">75</div>
+      </div><div class="cell">16</div><div class="cell">32</div><div class="cell">48</div><div class="cell">62</div><div class="cell">4</div><div class="cell">21</div><div class="cell">34</div><div class="cell">50</div><div class="cell">72</div><div class="cell">6</div><div class="cell">23</div><div class="cell free"><i class="fa-solid fa-star"></i><span>LIVRE</span></div><div class="cell">57</div><div class="cell">73</div><div class="cell">10</div><div class="cell">24</div><div class="cell">39</div><div class="cell">58</div><div class="cell">74</div><div class="cell">12</div><div class="cell">28</div><div class="cell">43</div><div class="cell">60</div><div class="cell">75</div>
       </div>
     </div>
 
