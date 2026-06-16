@@ -3,12 +3,25 @@ import { RefreshCw } from 'lucide-react'
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/+$/, '')
 
+function fetchPreview(params, signal) {
+  return fetch(`${API_URL}/api/template/preview`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    signal,
+    body: JSON.stringify(params),
+  }).then(r => {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    return r.text()
+  })
+}
+
 export default function BingoCardPreview({ form, imagePreviews = [null, null, null] }) {
   const [srcdoc, setSrcdoc]   = useState('')
   const [loading, setLoading] = useState(true)
   const containerRef = useRef(null)
   const [scale, setScale]     = useState(1)
-  const abortRef = useRef(null)
+  const timerRef   = useRef(null)
+  const controlRef = useRef(null)
 
   // Escala responsiva
   useEffect(() => {
@@ -20,38 +33,42 @@ export default function BingoCardPreview({ form, imagePreviews = [null, null, nu
     return () => obs.disconnect()
   }, [])
 
-  // Debounced fetch — dispara 500ms após o usuário parar de digitar
+  // Dispara preview sempre que qualquer campo mudar
+  // Usa debounce de 600ms para não fazer request a cada keystroke
   useEffect(() => {
+    // Limpa timer anterior
+    if (timerRef.current) clearTimeout(timerRef.current)
+    // Cancela request anterior
+    if (controlRef.current) controlRef.current.abort()
+
     setLoading(true)
 
-    const timer = setTimeout(() => {
-      // Cancela request anterior se ainda estiver em andamento
-      if (abortRef.current) abortRef.current.abort()
+    const params = {
+      premio:           form.premio       || '',
+      data:             form.data         || '',
+      horario:          form.horario      || '',
+      local:            form.local        || '',
+      valorCartela:     form.valorCartela || '',
+      contato:          form.contato      || '',
+      premioImagens:    imagePreviews,
+      premioImageBase64: imagePreviews[0] || null,
+    }
+
+    timerRef.current = setTimeout(() => {
       const controller = new AbortController()
-      abortRef.current = controller
+      controlRef.current = controller
 
-      fetch(`${API_URL}/api/template/preview`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          premio:          form.premio      || '',
-          data:            form.data        || '',
-          horario:         form.horario     || '',
-          local:           form.local       || '',
-          valorCartela:    form.valorCartela|| '',
-          contato:         form.contato     || '',
-          premioImagens:   imagePreviews,
-          premioImageBase64: imagePreviews[0] || null,
-        }),
-      })
-        .then(r => r.text())
-        .then(html => { setSrcdoc(html) })
-        .catch(err => { if (err.name !== 'AbortError') console.error('Preview error:', err) })
-        .finally(() => { setLoading(false) })
-    }, 500)
+      fetchPreview(params, controller.signal)
+        .then(html => setSrcdoc(html))
+        .catch(err => {
+          if (err.name !== 'AbortError') console.error('Preview error:', err)
+        })
+        .finally(() => setLoading(false))
+    }, 600)
 
-    return () => clearTimeout(timer)
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
   }, [
     form.premio,
     form.data,
@@ -64,29 +81,24 @@ export default function BingoCardPreview({ form, imagePreviews = [null, null, nu
     imagePreviews[2],
   ])
 
-  const handleRefresh = () => {
-    // Força novo fetch com números novos
-    setSrcdoc(s => s.trim() + ' ')
+  const doFetch = () => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    if (controlRef.current) controlRef.current.abort()
+
     setLoading(true)
-    if (abortRef.current) abortRef.current.abort()
     const controller = new AbortController()
-    abortRef.current = controller
-    fetch(`${API_URL}/api/template/preview`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
-      body: JSON.stringify({
-        premio:          form.premio      || '',
-        data:            form.data        || '',
-        horario:         form.horario     || '',
-        local:           form.local       || '',
-        valorCartela:    form.valorCartela|| '',
-        contato:         form.contato     || '',
-        premioImagens:   imagePreviews,
-        premioImageBase64: imagePreviews[0] || null,
-      }),
-    })
-      .then(r => r.text())
+    controlRef.current = controller
+
+    fetchPreview({
+      premio:           form.premio       || '',
+      data:             form.data         || '',
+      horario:          form.horario      || '',
+      local:            form.local        || '',
+      valorCartela:     form.valorCartela || '',
+      contato:          form.contato      || '',
+      premioImagens:    imagePreviews,
+      premioImageBase64: imagePreviews[0] || null,
+    }, controller.signal)
       .then(html => setSrcdoc(html))
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -100,7 +112,7 @@ export default function BingoCardPreview({ form, imagePreviews = [null, null, nu
         </span>
         <button
           type="button"
-          onClick={handleRefresh}
+          onClick={doFetch}
           disabled={loading}
           className="flex items-center gap-1.5 text-xs text-[#0D1F3C] hover:text-[#E8A000] font-semibold transition-colors disabled:opacity-50"
         >
@@ -124,12 +136,15 @@ export default function BingoCardPreview({ form, imagePreviews = [null, null, nu
         )}
         {srcdoc && (
           <iframe
-            key={srcdoc.slice(100, 200)}
+            key={srcdoc.slice(200, 300)}
             srcDoc={srcdoc}
             title="Preview da cartela"
             sandbox="allow-same-origin"
             style={{
-              width: 794, height: 1123, border: 'none', display: 'block',
+              width: 794,
+              height: 1123,
+              border: 'none',
+              display: 'block',
               transformOrigin: 'top left',
               transform: `scale(${scale})`,
             }}
