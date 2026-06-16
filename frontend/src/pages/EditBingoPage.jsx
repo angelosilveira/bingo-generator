@@ -70,7 +70,7 @@ export default function EditBingoPage() {
   const [totalGeradas, setTotalGeradas] = useState(0)
   const [imagePreviews, setImagePreviews] = useState([null, null, null])
   const [form, setForm] = useState({
-    premio: '', data: '', horario: '', local: '',
+    premio: '', contato: '', data: '', horario: '', local: '',
     valorCartela: '', quantidadeCartelas: 100, cartelajInicio: 1,
   })
 

@@ -13,21 +13,16 @@ function buildGrid(rows) {
   ).join('')
 }
 
-function renderTemplate(template, { numero, rows, premio, premioImageBase64, data, horario, local, valorCartela }) {
+function renderTemplate(template, { numero, rows, premio, premioImageBase64, premioImagens, contato, data, horario, local, valorCartela }) {
   const numFormatado = String(numero).padStart(4, '0')
-  const dataFormatada = data
-    ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')
-    : '__/__/____'
+  const dataFormatada = data ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR') : '__/__/____'
 
-  const premioImg = premioImageBase64
-    ? `<img src="${premioImageBase64}" alt="Prêmio" />`
-    : `<div class="img-placeholder"><i class="fa-solid fa-image"></i><span>FOTO DO PRÊMIO</span></div>`
-
-  // Monta 3 slots
-  const imgs3 = Array.from({ length: 3 }, (_, i) => {
+  const imgs = Array.from({ length: 3 }, (_, i) => {
     const src = (premioImagens && premioImagens[i]) || (i === 0 ? premioImageBase64 : null)
-    return src ? `<img src="${src}" class="prize-img" />` : `<div class="prize-img img-placeholder"><i class="fa-solid fa-image"></i></div>`
+    return src ? `<img src="${src}" alt="Premio ${i+1}" class="prize-img" />`
+               : `<div class="prize-img img-placeholder"><i class="fa-solid fa-image"></i></div>`
   }).join('')
+
   return template
     .replace(/{{NUMERO}}/g, numFormatado)
     .replace(/{{PREMIO}}/g, premio || 'A DEFINIR')
@@ -35,15 +30,15 @@ function renderTemplate(template, { numero, rows, premio, premioImageBase64, dat
     .replace(/{{HORARIO}}/g, horario || '--:--')
     .replace(/{{LOCAL}}/g, local || '')
     .replace(/{{VALOR}}/g, fmtValor(valorCartela) || '')
-    .replace(/{{IMAGEM_PREMIO}}/g, imgs3)
+    .replace(/{{CONTATO}}/g, contato || '—')
+    .replace(/{{IMAGEM_PREMIO}}/g, imgs)
     .replace(/{{TABELA}}/g, buildGrid(rows))
 }
 
 export async function gerarPDF({
   quantidadeCartelas, cartelajInicio = 1,
-  premio, premioImageBase64, premioImagens,
-  data, horario, local, valorCartela,
-  customTemplate,
+  premio, premioImageBase64, premioImagens, contato,
+  data, horario, local, valorCartela, customTemplate,
 }) {
   const browser = await puppeteer.launch({
     headless: true,
@@ -58,16 +53,13 @@ export async function gerarPDF({
 
   try {
     const todasCartelas = Array.from({ length: quantidadeCartelas }, (_, i) => ({
-      numero: cartelajInicio + i,
-      rows: gerarCartela(),
+      numero: cartelajInicio + i, rows: gerarCartela(),
     }))
-
     const lotes = []
     for (let i = 0; i < todasCartelas.length; i += BATCH_SIZE)
       lotes.push(todasCartelas.slice(i, i + BATCH_SIZE))
 
-    const fim = cartelajInicio + quantidadeCartelas - 1
-    console.log(`📦 Cartelas ${cartelajInicio}–${fim} → ${lotes.length} lotes`)
+    console.log(`📦 ${cartelajInicio}–${cartelajInicio + quantidadeCartelas - 1} → ${lotes.length} lotes`)
 
     for (let li = 0; li < lotes.length; li++) {
       console.log(`  → Lote ${li + 1}/${lotes.length}`)
@@ -75,24 +67,18 @@ export async function gerarPDF({
         const page = await browser.newPage()
         try {
           const html = customTemplate
-            ? renderTemplate(customTemplate, { numero, rows, premio, premioImageBase64, data, horario, local, valorCartela })
-            : gerarHTMLCartela({ numero, rows, premio, premioImageBase64, premioImagens, data, horario, local, valorCartela })
-
+            ? renderTemplate(customTemplate, { numero, rows, premio, premioImageBase64, premioImagens, contato, data, horario, local, valorCartela })
+            : gerarHTMLCartela({ numero, rows, premio, premioImageBase64, premioImagens, contato, data, horario, local, valorCartela })
           await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 })
           const pdfBuf = await page.pdf({ format: 'A4', printBackground: true, timeout: 60000 })
           const doc = await PDFDocument.load(pdfBuf)
           const [pg] = await mergedDoc.copyPages(doc, [0])
           mergedDoc.addPage(pg)
-        } finally {
-          await page.close()
-        }
+        } finally { await page.close() }
       }
     }
-
     const finalPdf = await mergedDoc.save()
-    console.log(`✅ PDF: ${(finalPdf.byteLength / 1024 / 1024).toFixed(1)} MB`)
+    console.log(`✅ ${(finalPdf.byteLength / 1024 / 1024).toFixed(1)} MB`)
     return Buffer.from(finalPdf)
-  } finally {
-    await browser.close()
-  }
+  } finally { await browser.close() }
 }

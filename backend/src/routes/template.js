@@ -25,7 +25,7 @@ function buildGrid(rows) {
   ).join('')
 }
 
-function substitute(tmpl, { premio, dataFormatada, horario, local, valorCartela, premioImg, gridHTML }) {
+function substitute(tmpl, { premio, dataFormatada, horario, local, valorCartela, contato, premioImg, gridHTML }) {
   return tmpl
     .replace(/{{NUMERO}}/g, '0001')
     .replace(/{{PREMIO}}/g, premio || 'Smart TV 55" Samsung')
@@ -33,17 +33,15 @@ function substitute(tmpl, { premio, dataFormatada, horario, local, valorCartela,
     .replace(/{{HORARIO}}/g, horario || '19:00')
     .replace(/{{LOCAL}}/g, local || 'Clube Recreativo Central')
     .replace(/{{VALOR}}/g, fmtValor(valorCartela) || 'R$ 10,00')
+    .replace(/{{CONTATO}}/g, contato || '—')
     .replace(/{{IMAGEM_PREMIO}}/g, premioImg)
-    .replace(/{{QR_CODE}}/g, premioImg)
     .replace(/{{TABELA}}/g, gridHTML)
 }
 
 router.get('/', async (req, res) => {
   try {
     res.json({ html: await getTemplateFromFirestore() || null })
-  } catch {
-    res.json({ html: null })
-  }
+  } catch { res.json({ html: null }) }
 })
 
 router.post('/', async (req, res) => {
@@ -52,40 +50,34 @@ router.post('/', async (req, res) => {
   try {
     await db.collection('config').doc('template').set({ html, updatedAt: new Date() })
     res.json({ ok: true })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
 router.delete('/', async (req, res) => {
   try {
     await db.collection('config').doc('template').delete()
     res.json({ ok: true })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
 router.post('/preview', async (req, res) => {
   try {
-    const { html, premio, data, horario, local, valorCartela, premioImageBase64, premioImagens } = req.body
+    const { html, premio, data, horario, local, valorCartela, contato, premioImageBase64, premioImagens } = req.body
 
     const rows = gerarCartela()
     const dataFormatada = data
       ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')
       : new Date().toLocaleDateString('pt-BR')
 
-    // Monta os 3 slots de imagem
     const imgs = Array.from({ length: 3 }, (_, i) => {
-      const src = (premioImagens && premioImagens[i]) || premioImageBase64 || null
+      const src = (premioImagens && premioImagens[i]) || (i === 0 ? premioImageBase64 : null)
       return src
-        ? `<img src="${src}" alt="Prêmio ${i+1}" class="prize-img" />`
+        ? `<img src="${src}" alt="Premio ${i+1}" class="prize-img" />`
         : `<div class="prize-img img-placeholder"><i class="fa-solid fa-image"></i></div>`
     })
     const premioImg = imgs.join('')
-
     const gridHTML = buildGrid(rows)
-    const params = { premio, dataFormatada, horario, local, valorCartela, premioImg, gridHTML }
+    const params = { premio, dataFormatada, horario, local, valorCartela, contato, premioImg, gridHTML }
 
     if (html) {
       res.setHeader('Content-Type', 'text/html; charset=utf-8')
@@ -98,18 +90,10 @@ router.post('/preview', async (req, res) => {
       return res.send(substitute(savedHtml, params))
     }
 
-    const fallback = gerarHTMLCartela({
-      numero: 1, rows,
-      premio: premio || 'Smart TV 55" Samsung',
-      premioImageBase64: (premioImagens && premioImagens[0]) || premioImageBase64 || null,
-      premioImagens,
-      data, horario, local, valorCartela,
-    })
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
-    res.send(fallback)
-
+    res.send(gerarHTMLCartela({ numero: 1, rows, premio, premioImageBase64, premioImagens, data, horario, local, valorCartela, contato }))
   } catch (err) {
-    console.error('❌ Preview error:', err.message)
+    console.error('❌ Preview:', err.message)
     res.status(500).json({ error: err.message })
   }
 })

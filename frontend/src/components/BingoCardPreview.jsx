@@ -34,6 +34,7 @@ export default function BingoCardPreview({ form, imagePreviews = [null, null, nu
         horario: form.horario || '',
         local: form.local || '',
         valorCartela: form.valorCartela || '',
+        contato: form.contato || '',
         premioImagens: imagePreviews,
         premioImageBase64: imagePreviews[0] || null,
       }),

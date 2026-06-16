@@ -13,59 +13,41 @@ const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replac
 function resizeImage(file, maxSize = 800) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = (e) => {
+    reader.onload = e => {
       const img = new Image()
       img.onload = () => {
         const canvas = document.createElement('canvas')
         const ratio = Math.min(maxSize / img.width, maxSize / img.height, 1)
-        canvas.width = img.width * ratio
-        canvas.height = img.height * ratio
+        canvas.width = img.width * ratio; canvas.height = img.height * ratio
         canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
         resolve(canvas.toDataURL('image/jpeg', 0.85))
       }
-      img.onerror = reject
-      img.src = e.target.result
+      img.onerror = reject; img.src = e.target.result
     }
-    reader.onerror = reject
-    reader.readAsDataURL(file)
+    reader.onerror = reject; reader.readAsDataURL(file)
   })
 }
 
 function ImageSlot({ index, preview, onSelect, onRemove }) {
   const ref = useRef(null)
   return (
-    <div className="relative">
-      <div
-        onClick={() => !preview && ref.current?.click()}
-        className={`h-28 rounded-xl border-2 flex items-center justify-center overflow-hidden transition-colors
-          ${preview ? 'border-blue-300' : 'border-dashed border-gray-200 hover:border-[#0D1F3C] hover:bg-blue-50 cursor-pointer'}`}
-      >
+    <div>
+      <div onClick={() => !preview && ref.current?.click()}
+        className={`h-28 rounded-xl border-2 flex items-center justify-center overflow-hidden transition-colors relative
+          ${preview ? 'border-blue-300' : 'border-dashed border-gray-200 hover:border-[#0D1F3C] hover:bg-blue-50 cursor-pointer'}`}>
         {preview
-          ? <img src={preview} className="w-full h-full object-cover" alt={`Foto ${index + 1}`} />
-          : <div className="flex flex-col items-center gap-1 text-gray-400">
-              <ImagePlus size={22} />
-              <span className="text-xs font-medium">Foto {index + 1}</span>
-            </div>
+          ? <img src={preview} className="w-full h-full object-cover" alt={`Foto ${index+1}`} />
+          : <div className="flex flex-col items-center gap-1 text-gray-400"><ImagePlus size={22}/><span className="text-xs font-medium">Foto {index+1}</span></div>
         }
+        {preview && (
+          <button onClick={e=>{e.stopPropagation();onRemove()}}
+            className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
+            <X size={12}/>
+          </button>
+        )}
       </div>
-      {preview && (
-        <button onClick={onRemove}
-          className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors">
-          <X size={12} />
-        </button>
-      )}
-      {!preview && (
-        <input ref={ref} type="file" accept="image/*" className="hidden"
-          onChange={e => { if (e.target.files[0]) onSelect(e.target.files[0]) }} />
-      )}
-      {preview && (
-        <button onClick={() => ref.current?.click()}
-          className="mt-1 w-full text-xs text-center text-gray-400 hover:text-[#0D1F3C] transition-colors">
-          Trocar foto
-        </button>
-      )}
-      <input ref={!preview ? undefined : ref} type="file" accept="image/*" className="hidden"
-        onChange={e => { if (e.target.files[0]) onSelect(e.target.files[0]) }} />
+      {preview && <button onClick={()=>ref.current?.click()} className="mt-1 w-full text-xs text-center text-gray-400 hover:text-[#0D1F3C]">Trocar foto</button>}
+      <input ref={ref} type="file" accept="image/*" className="hidden" onChange={e=>{if(e.target.files[0])onSelect(e.target.files[0])}}/>
     </div>
   )
 }
@@ -73,69 +55,40 @@ function ImageSlot({ index, preview, onSelect, onRemove }) {
 export default function NewBingoPage() {
   const navigate = useNavigate()
   const [submitting, setSubmitting] = useState(false)
-  const [imagePreviews, setImagePreviews] = useState([null, null, null])
-  const [form, setForm] = useState({
-    premio: '', data: '', horario: '', local: '',
-    valorCartela: '', quantidadeCartelas: 100,
-  })
+  const [imagePreviews, setImagePreviews] = useState([null,null,null])
+  const [form, setForm] = useState({ premio:'', contato:'', data:'', horario:'', local:'', valorCartela:'', quantidadeCartelas:100 })
 
-  const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
+  const set = f => e => setForm(p => ({...p,[f]:e.target.value}))
 
-  const handleImage = async (index, file) => {
-    if (!file.type.startsWith('image/')) { toast.error('Selecione uma imagem válida.'); return }
+  const handleImage = async (i, file) => {
     const b64 = await resizeImage(file)
-    setImagePreviews(prev => { const n = [...prev]; n[index] = b64; return n })
+    setImagePreviews(p => { const n=[...p]; n[i]=b64; return n })
   }
+  const removeImage = i => setImagePreviews(p => { const n=[...p]; n[i]=null; return n })
 
-  const removeImage = (index) => {
-    setImagePreviews(prev => { const n = [...prev]; n[index] = null; return n })
-  }
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault()
-    if (!form.premio || !form.data || !form.local || !form.valorCartela) {
-      toast.error('Preencha todos os campos obrigatórios.')
-      return
-    }
+    if (!form.premio||!form.data||!form.local||!form.valorCartela) { toast.error('Preencha todos os campos.'); return }
     setSubmitting(true)
     try {
       const premioImagens = imagePreviews.filter(Boolean)
-
-      const docRef = await addDoc(collection(db, 'bingos'), {
-        ...form,
-        premioImagens,
-        premioImageBase64: premioImagens[0] || null,
-        quantidadeCartelas: Number(form.quantidadeCartelas),
-        status: 'processing',
-        createdAt: serverTimestamp(),
+      const docRef = await addDoc(collection(db,'bingos'), {
+        ...form, premioImagens, premioImageBase64: premioImagens[0]||null,
+        quantidadeCartelas: Number(form.quantidadeCartelas), status:'processing', createdAt: serverTimestamp(),
       })
-
-      toast.success('Gerando cartelas, aguarde…')
-
       const res = await fetch(`${API_URL}/api/bingo/gerar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bingoId: docRef.id,
-          ...form,
-          premioImagens,
-          premioImageBase64: premioImagens[0] || null,
-          quantidadeCartelas: Number(form.quantidadeCartelas),
-        }),
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ bingoId:docRef.id, ...form, premioImagens, premioImageBase64:premioImagens[0]||null, quantidadeCartelas:Number(form.quantidadeCartelas) }),
       })
-
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Falha')
+      if (!res.ok) throw new Error((await res.json().catch(()=>({}))).detail||'Falha')
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
-      Object.assign(document.createElement('a'), { href: url, download: `bingo-${docRef.id}.pdf` }).click()
+      Object.assign(document.createElement('a'),{href:url,download:`bingo-${docRef.id}.pdf`}).click()
       URL.revokeObjectURL(url)
       toast.success(`${form.quantidadeCartelas} cartelas geradas!`)
       navigate('/admin')
-    } catch (err) {
-      toast.error(err.message || 'Erro ao gerar.')
-    } finally {
-      setSubmitting(false)
-    }
+    } catch(err) { toast.error(err.message||'Erro.') }
+    finally { setSubmitting(false) }
   }
 
   return (
@@ -153,24 +106,14 @@ export default function NewBingoPage() {
                 <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><span>🎁</span> Prêmio</h2>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
-                      Nome do prêmio <span className="text-red-500">*</span>
-                    </label>
-                    <input type="text" value={form.premio} onChange={set('premio')} required
-                      placeholder="Ex: VW Golf Sportline 1.6"
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]" />
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Nome do prêmio <span className="text-red-500">*</span></label>
+                    <input type="text" value={form.premio} onChange={set('premio')} required placeholder="Ex: VW Golf Sportline 1.6"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]"/>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-2">
-                      Fotos do prêmio <span className="text-xs text-gray-400">(até 3 imagens)</span>
-                    </label>
+                    <label className="block text-sm font-medium text-gray-600 mb-2">Fotos do prêmio <span className="text-xs text-gray-400">(até 3 imagens)</span></label>
                     <div className="grid grid-cols-3 gap-3">
-                      {[0, 1, 2].map(i => (
-                        <ImageSlot key={i} index={i}
-                          preview={imagePreviews[i]}
-                          onSelect={(file) => handleImage(i, file)}
-                          onRemove={() => removeImage(i)} />
-                      ))}
+                      {[0,1,2].map(i => <ImageSlot key={i} index={i} preview={imagePreviews[i]} onSelect={f=>handleImage(i,f)} onRemove={()=>removeImage(i)}/>)}
                     </div>
                   </div>
                 </div>
@@ -182,18 +125,22 @@ export default function NewBingoPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1">Data <span className="text-red-500">*</span></label>
                     <input type="date" value={form.data} onChange={set('data')} required
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]" />
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]"/>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1">Horário</label>
                     <input type="time" value={form.horario} onChange={set('horario')}
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]" />
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]"/>
                   </div>
                   <div className="col-span-2">
                     <label className="block text-sm font-medium text-gray-600 mb-1">Local <span className="text-red-500">*</span></label>
-                    <input type="text" value={form.local} onChange={set('local')} required
-                      placeholder="Ex: Clube Recreativo Central"
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]" />
+                    <input type="text" value={form.local} onChange={set('local')} required placeholder="Ex: Clube Recreativo Central"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]"/>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Contato</label>
+                    <input type="text" value={form.contato} onChange={set('contato')} placeholder="Ex: (86) 9 9999-9999"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]"/>
                   </div>
                 </div>
               </section>
@@ -203,16 +150,14 @@ export default function NewBingoPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1">Valor <span className="text-red-500">*</span></label>
-                    <input type="text" value={form.valorCartela} required
-                      onChange={e => setForm(f => ({ ...f, valorCartela: formatCurrency(e.target.value) }))}
-                      inputMode="numeric" placeholder="Ex: R$ 20,00"
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]" />
+                    <input type="text" value={form.valorCartela} required inputMode="numeric" placeholder="Ex: R$ 20,00"
+                      onChange={e=>setForm(f=>({...f,valorCartela:formatCurrency(e.target.value)}))}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]"/>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1">Quantidade <span className="text-red-500">*</span></label>
-                    <input type="number" value={form.quantidadeCartelas} onChange={set('quantidadeCartelas')}
-                      min={1} max={1000} required
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]" />
+                    <input type="number" value={form.quantidadeCartelas} onChange={set('quantidadeCartelas')} min={1} max={1000} required
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]"/>
                     <p className="text-xs text-gray-400 mt-1">Máximo: 1.000</p>
                   </div>
                 </div>
@@ -220,14 +165,12 @@ export default function NewBingoPage() {
 
               <button type="submit" disabled={submitting}
                 className="w-full flex items-center justify-center gap-2 bg-[#0D1F3C] hover:bg-[#162E58] text-white font-bold py-3.5 rounded-xl transition-colors disabled:opacity-60 text-base">
-                {submitting
-                  ? <><Loader2 size={20} className="animate-spin" /> Gerando {form.quantidadeCartelas} cartelas…</>
-                  : <>Gerar {form.quantidadeCartelas || '?'} cartelas em PDF</>}
+                {submitting ? <><Loader2 size={20} className="animate-spin"/> Gerando…</> : <>Gerar {form.quantidadeCartelas||'?'} cartelas em PDF</>}
               </button>
             </form>
 
             <div className="lg:sticky lg:top-8">
-              <BingoCardPreview form={form} imagePreviews={imagePreviews} />
+              <BingoCardPreview form={form} imagePreviews={imagePreviews}/>
             </div>
           </div>
         </div>

@@ -5,15 +5,12 @@ import { gerarPDF } from '../services/pdfService.js'
 const router = express.Router()
 
 router.post('/gerar', async (req, res) => {
-  const {
-    bingoId, quantidadeCartelas, cartelajInicio = 1,
-    premio, premioImageBase64, premioImagens,
-    data, horario, local, valorCartela,
-  } = req.body
+  const { bingoId, quantidadeCartelas, cartelajInicio = 1,
+    premio, premioImageBase64, premioImagens, contato,
+    data, horario, local, valorCartela } = req.body
 
-  if (!bingoId || !quantidadeCartelas) {
+  if (!bingoId || !quantidadeCartelas)
     return res.status(400).json({ error: 'bingoId e quantidadeCartelas são obrigatórios.' })
-  }
 
   const inicio = Number(cartelajInicio)
   const quantidade = Number(quantidadeCartelas)
@@ -25,29 +22,16 @@ router.post('/gerar', async (req, res) => {
     let customTemplate = null
     try {
       const tmplSnap = await db.collection('config').doc('template').get()
-      if (tmplSnap.exists && tmplSnap.data().html) {
-        customTemplate = tmplSnap.data().html
-        console.log('📄 Template customizado carregado')
-      }
-    } catch (e) {
-      console.warn('⚠️ Sem template customizado:', e.message)
-    }
+      if (tmplSnap.exists && tmplSnap.data().html) customTemplate = tmplSnap.data().html
+    } catch (e) { console.warn('⚠️ Sem template customizado:', e.message) }
 
     const pdfBuffer = await gerarPDF({
-      quantidadeCartelas: quantidade,
-      cartelajInicio: inicio,
-      premio, premioImageBase64, premioImagens,
-      data, horario, local, valorCartela,
-      customTemplate,
+      quantidadeCartelas: quantidade, cartelajInicio: inicio,
+      premio, premioImageBase64, premioImagens, contato,
+      data, horario, local, valorCartela, customTemplate,
     })
 
-    await db.collection('bingos').doc(bingoId).update({
-      status: 'done',
-      totalCartelas: fim,
-      pdfGeneratedAt: new Date(),
-    })
-
-    console.log(`✅ PDF: ${(pdfBuffer.length / 1024 / 1024).toFixed(1)} MB (${inicio}–${fim})`)
+    await db.collection('bingos').doc(bingoId).update({ status: 'done', totalCartelas: fim, pdfGeneratedAt: new Date() })
 
     res.set({
       'Content-Type': 'application/pdf',
