@@ -4,44 +4,39 @@ import { gerarCartelaPreview } from '../utils/bingoGenerator'
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/+$/, '')
 
-export default function BingoCardPreview({ form, imagePreview }) {
-  const [rows, setRows] = useState(() => gerarCartelaPreview())
+export default function BingoCardPreview({ form, imagePreviews = [null, null, null] }) {
   const [srcdoc, setSrcdoc] = useState('')
   const [loading, setLoading] = useState(true)
   const containerRef = useRef(null)
   const [scale, setScale] = useState(1)
 
-  const refresh = useCallback(() => setRows(gerarCartelaPreview()), [])
+  const refresh = useCallback(() => setSrcdoc(''), [])
 
-  // Calcula escala para caber na coluna
   useEffect(() => {
     if (!containerRef.current) return
-    const observer = new ResizeObserver(entries => {
-      const width = entries[0].contentRect.width
-      setScale(width / 794)
+    const obs = new ResizeObserver(entries => {
+      setScale(entries[0].contentRect.width / 794)
     })
-    observer.observe(containerRef.current)
-    return () => observer.disconnect()
+    obs.observe(containerRef.current)
+    return () => obs.disconnect()
   }, [])
 
-  // Busca preview renderizado do backend com os dados do form
   useEffect(() => {
     let cancelled = false
     setLoading(true)
 
-    const body = {
-      premio: form.premio || '',
-      data: form.data || '',
-      horario: form.horario || '',
-      local: form.local || '',
-      valorCartela: form.valorCartela || '',
-      premioImageBase64: imagePreview || null,
-    }
-
     fetch(`${API_URL}/api/template/preview`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        premio: form.premio || '',
+        data: form.data || '',
+        horario: form.horario || '',
+        local: form.local || '',
+        valorCartela: form.valorCartela || '',
+        premioImagens: imagePreviews,
+        premioImageBase64: imagePreviews[0] || null,
+      }),
     })
       .then(r => r.text())
       .then(html => { if (!cancelled) setSrcdoc(html) })
@@ -50,69 +45,49 @@ export default function BingoCardPreview({ form, imagePreview }) {
 
     return () => { cancelled = true }
   }, [
-    form.premio,
-    form.data,
-    form.horario,
-    form.local,
-    form.valorCartela,
-    imagePreview,
-
-    rows,
+    form.premio, form.data, form.horario,
+    form.local, form.valorCartela,
+    imagePreviews[0], imagePreviews[1], imagePreviews[2],
   ])
 
   return (
     <div className="flex flex-col items-center gap-3">
-      {/* Header */}
       <div className="flex items-center justify-between w-full">
-        <span className="text-sm font-bold text-gray-600 uppercase tracking-wide">
-          Preview da cartela
-        </span>
-        <button
-          type="button"
-          onClick={refresh}
+        <span className="text-sm font-bold text-gray-600 uppercase tracking-wide">Preview da cartela</span>
+        <button type="button" onClick={() => {
+          setLoading(true)
+          setSrcdoc(s => s + ' ')
+        }}
           disabled={loading}
-          className="flex items-center gap-1.5 text-xs text-[#0D1F3C] hover:text-[#E8A000] font-semibold transition-colors disabled:opacity-50"
-        >
+          className="flex items-center gap-1.5 text-xs text-[#0D1F3C] hover:text-[#E8A000] font-semibold transition-colors disabled:opacity-50">
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           {loading ? 'Atualizando…' : 'Novo exemplo'}
         </button>
       </div>
-
-      {/* Container com proporção A4 */}
-      <div
-        ref={containerRef}
+      <div ref={containerRef}
         className="w-full relative rounded-xl overflow-hidden shadow-lg border border-gray-200 bg-gray-100"
-        style={{ height: scale ? Math.round(1123 * scale) : 500 }}
-      >
+        style={{ height: scale ? Math.round(1123 * scale) : 500 }}>
         {loading && (
           <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
             <div className="flex items-center gap-2 text-gray-500 text-sm">
-              <RefreshCw size={16} className="animate-spin" />
-              <span>Carregando preview…</span>
+              <RefreshCw size={16} className="animate-spin" /><span>Carregando preview…</span>
             </div>
           </div>
         )}
         {srcdoc && (
           <iframe
-            key={srcdoc.length + srcdoc.slice(-16)}
+            key={srcdoc.length + srcdoc.slice(-20)}
             srcDoc={srcdoc}
             title="Preview da cartela"
             sandbox="allow-same-origin"
             style={{
-              width: 794,
-              height: 1123,
-              border: 'none',
-              display: 'block',
-              transformOrigin: 'top left',
-              transform: `scale(${scale})`,
+              width: 794, height: 1123, border: 'none', display: 'block',
+              transformOrigin: 'top left', transform: `scale(${scale})`,
             }}
           />
         )}
       </div>
-
-      <p className="text-xs text-gray-400 text-center">
-        Números gerados aleatoriamente — apenas um exemplo visual.
-      </p>
+      <p className="text-xs text-gray-400 text-center">Números gerados aleatoriamente — apenas um exemplo visual.</p>
     </div>
   )
 }

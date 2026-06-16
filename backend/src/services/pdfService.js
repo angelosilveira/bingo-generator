@@ -23,6 +23,11 @@ function renderTemplate(template, { numero, rows, premio, premioImageBase64, dat
     ? `<img src="${premioImageBase64}" alt="Prêmio" />`
     : `<div class="img-placeholder"><i class="fa-solid fa-image"></i><span>FOTO DO PRÊMIO</span></div>`
 
+  // Monta 3 slots
+  const imgs3 = Array.from({ length: 3 }, (_, i) => {
+    const src = (premioImagens && premioImagens[i]) || (i === 0 ? premioImageBase64 : null)
+    return src ? `<img src="${src}" class="prize-img" />` : `<div class="prize-img img-placeholder"><i class="fa-solid fa-image"></i></div>`
+  }).join('')
   return template
     .replace(/{{NUMERO}}/g, numFormatado)
     .replace(/{{PREMIO}}/g, premio || 'A DEFINIR')
@@ -30,13 +35,13 @@ function renderTemplate(template, { numero, rows, premio, premioImageBase64, dat
     .replace(/{{HORARIO}}/g, horario || '--:--')
     .replace(/{{LOCAL}}/g, local || '')
     .replace(/{{VALOR}}/g, fmtValor(valorCartela) || '')
-    .replace(/{{IMAGEM_PREMIO}}/g, premioImg)
+    .replace(/{{IMAGEM_PREMIO}}/g, imgs3)
     .replace(/{{TABELA}}/g, buildGrid(rows))
 }
 
 export async function gerarPDF({
   quantidadeCartelas, cartelajInicio = 1,
-  premio, premioImageBase64,
+  premio, premioImageBase64, premioImagens,
   data, horario, local, valorCartela,
   customTemplate,
 }) {
@@ -71,7 +76,7 @@ export async function gerarPDF({
         try {
           const html = customTemplate
             ? renderTemplate(customTemplate, { numero, rows, premio, premioImageBase64, data, horario, local, valorCartela })
-            : gerarHTMLCartela({ numero, rows, premio, premioImageBase64, data, horario, local, valorCartela })
+            : gerarHTMLCartela({ numero, rows, premio, premioImageBase64, premioImagens, data, horario, local, valorCartela })
 
           await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 })
           const pdfBuf = await page.pdf({ format: 'A4', printBackground: true, timeout: 60000 })
