@@ -5,21 +5,19 @@ import { fmtValor } from '../utils/format.js'
 
 const BATCH_SIZE = 20
 
+function buildGrid(rows) {
+  return rows.flat().map(cell =>
+    cell.free
+      ? `<div class="cell free"><i class="fa-solid fa-star"></i><span>LIVRE</span></div>`
+      : `<div class="cell">${cell.value}</div>`
+  ).join('')
+}
+
 function renderTemplate(template, { numero, rows, premio, premioImageBase64, data, horario, local, valorCartela }) {
   const numFormatado = String(numero).padStart(4, '0')
   const dataFormatada = data
     ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')
     : '__/__/____'
-
-  const tabelaHTML = rows.map(row =>
-    `<tr>${row.map(cell =>
-      `<td class="cell${cell.free ? ' free' : ''}">${
-        cell.free
-          ? `<i class="fa-solid fa-star"></i><span>LIVRE</span>`
-          : cell.value
-      }</td>`
-    ).join('')}</tr>`
-  ).join('')
 
   const premioImg = premioImageBase64
     ? `<img src="${premioImageBase64}" alt="Prêmio" />`
@@ -33,7 +31,7 @@ function renderTemplate(template, { numero, rows, premio, premioImageBase64, dat
     .replace(/{{LOCAL}}/g, local || '')
     .replace(/{{VALOR}}/g, fmtValor(valorCartela) || '')
     .replace(/{{IMAGEM_PREMIO}}/g, premioImg)
-    .replace(/{{TABELA}}/g, tabelaHTML)
+    .replace(/{{TABELA}}/g, buildGrid(rows))
 }
 
 export async function gerarPDF({
@@ -75,7 +73,7 @@ export async function gerarPDF({
             ? renderTemplate(customTemplate, { numero, rows, premio, premioImageBase64, data, horario, local, valorCartela })
             : gerarHTMLCartela({ numero, rows, premio, premioImageBase64, data, horario, local, valorCartela })
 
-          await page.setContent(html, { waitUntil: ['domcontentloaded', 'networkidle0'], timeout: 60000 })
+          await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 })
           const pdfBuf = await page.pdf({ format: 'A4', printBackground: true, timeout: 60000 })
           const doc = await PDFDocument.load(pdfBuf)
           const [pg] = await mergedDoc.copyPages(doc, [0])

@@ -17,25 +17,15 @@ async function getTemplateFromFirestore() {
   return null
 }
 
-function buildTabelaHTML(rows) {
-  return rows.map(row =>
-    `<div style="display:contents">${row.map(cell =>
-      `<div class="cell${cell.free ? ' free' : ''}">${
-        cell.free
-          ? `<i class="fa-solid fa-star"></i><span>LIVRE</span>`
-          : cell.value
-      }</div>`
-    ).join('')}</div>`
+function buildGrid(rows) {
+  return rows.flat().map(cell =>
+    cell.free
+      ? `<div class="cell free"><i class="fa-solid fa-star"></i><span>LIVRE</span></div>`
+      : `<div class="cell">${cell.value}</div>`
   ).join('')
 }
 
-function buildPremioImg(premioImageBase64) {
-  return premioImageBase64
-    ? `<img src="${premioImageBase64}" alt="Prêmio" />`
-    : `<div class="img-placeholder"><i class="fa-solid fa-image"></i><span>FOTO DO PRÊMIO</span></div>`
-}
-
-function substitute(tmpl, { premio, dataFormatada, horario, local, valorCartela, premioImg, tabelaHTML }) {
+function substitute(tmpl, { premio, dataFormatada, horario, local, valorCartela, premioImg, gridHTML }) {
   return tmpl
     .replace(/{{NUMERO}}/g, '0001')
     .replace(/{{PREMIO}}/g, premio || 'Smart TV 55" Samsung')
@@ -45,13 +35,12 @@ function substitute(tmpl, { premio, dataFormatada, horario, local, valorCartela,
     .replace(/{{VALOR}}/g, fmtValor(valorCartela) || 'R$ 10,00')
     .replace(/{{IMAGEM_PREMIO}}/g, premioImg)
     .replace(/{{QR_CODE}}/g, premioImg)
-    .replace(/{{TABELA}}/g, tabelaHTML)
+    .replace(/{{TABELA}}/g, gridHTML)
 }
 
 router.get('/', async (req, res) => {
   try {
-    const savedHtml = await getTemplateFromFirestore()
-    res.json({ html: savedHtml || null })
+    res.json({ html: await getTemplateFromFirestore() || null })
   } catch {
     res.json({ html: null })
   }
@@ -86,9 +75,12 @@ router.post('/preview', async (req, res) => {
       ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')
       : new Date().toLocaleDateString('pt-BR')
 
-    const premioImg = buildPremioImg(premioImageBase64)
-    const tabelaHTML = buildTabelaHTML(rows)
-    const params = { premio, dataFormatada, horario, local, valorCartela, premioImg, tabelaHTML }
+    const premioImg = premioImageBase64
+      ? `<img src="${premioImageBase64}" alt="Prêmio" />`
+      : `<div class="img-placeholder"><i class="fa-solid fa-image"></i><span>FOTO DO PRÊMIO</span></div>`
+
+    const gridHTML = buildGrid(rows)
+    const params = { premio, dataFormatada, horario, local, valorCartela, premioImg, gridHTML }
 
     if (html) {
       res.setHeader('Content-Type', 'text/html; charset=utf-8')
@@ -104,8 +96,7 @@ router.post('/preview', async (req, res) => {
     const fallback = gerarHTMLCartela({
       numero: 1, rows,
       premio: premio || 'Smart TV 55" Samsung',
-      premioImageBase64,
-      data, horario, local, valorCartela,
+      premioImageBase64, data, horario, local, valorCartela,
     })
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     res.send(fallback)
