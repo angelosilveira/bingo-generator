@@ -82,7 +82,7 @@ export default function EditBingoPage() {
         const d = snap.data()
         const total = d.totalCartelas || d.quantidadeCartelas || 0
         setTotalGeradas(total)
-        setForm({ premio: d.premio || '', data: d.data || '', horario: d.horario || '',
+        setForm({ premio: d.premio || '', contato: d.contato || '', data: d.data || '', horario: d.horario || '',
           local: d.local || '', valorCartela: d.valorCartela || '',
           quantidadeCartelas: 100, cartelajInicio: total + 1 })
         if (d.premioImagens) setImagePreviews([d.premioImagens[0]||null, d.premioImagens[1]||null, d.premioImagens[2]||null])
@@ -189,6 +189,11 @@ export default function EditBingoPage() {
                   <div className="col-span-2">
                     <label className="block text-sm font-medium text-gray-600 mb-1">Local <span className="text-red-500">*</span></label>
                     <input type="text" value={form.local} onChange={set('local')} required
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Contato</label>
+                    <input type="text" value={form.contato} onChange={set('contato')} placeholder="Ex: (86) 9 9999-9999"
                       className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0D1F3C]" />
                   </div>
                 </div>
