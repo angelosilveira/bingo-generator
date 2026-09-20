@@ -19,7 +19,7 @@ console.log('✅ CORS origens permitidas:', allowedOrigins)
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true)
-    if (allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
+    if (allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin) || /^http:\/\/localhost:\d+$/.test(origin)) {
       callback(null, true)
     } else {
       console.warn('🚫 CORS bloqueado para origem:', origin)
