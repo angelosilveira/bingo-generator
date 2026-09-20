@@ -3,7 +3,7 @@ import { gerarCartela } from './bingoGenerator.js'
 import { gerarHTMLCartela } from '../templates/cartela.js'
 import { fmtValor } from '../utils/format.js'
 
-const BATCH_SIZE = 20
+const BATCH_SIZE = 10
 
 function buildGrid(rows) {
   return rows.flat().map(cell =>
@@ -35,6 +35,30 @@ function renderTemplate(template, { numero, rows, premio, premioImageBase64, pre
     .replace(/{{TABELA}}/g, buildGrid(rows))
 }
 
+// Junta vários HTMLs de cartela em um só documento, uma cartela por página.
+// Imagens data: são extraídas e reinseridas como UMA blob URL compartilhada, senão o
+// Chromium embute uma cópia por <img> no PDF.
+function combinarHTMLs(htmls) {
+  const imagens = []
+  htmls = htmls.map(h => h.replace(/src="(data:[^"]+)"/g, (_, uri) => {
+    let i = imagens.indexOf(uri)
+    if (i < 0) i = imagens.push(uri) - 1
+    return `data-img="${i}"`
+  }))
+  const head = htmls[0].match(/<head[^>]*>([\s\S]*?)<\/head>/i)?.[1] || ''
+  const pages = htmls.map(h => {
+    const body = h.match(/<body[^>]*>([\s\S]*)<\/body>/i)?.[1] ?? h
+    return `<div class="pg">${body}</div>`
+  }).join('')
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head>${head}<style>
+@page { size: 794px 1123px; margin: 0 }
+html, body { width:794px !important; height:auto !important; overflow:visible !important; padding:0 !important; margin:0 !important }
+.pg { width:794px; height:1123px; padding:14px; overflow:hidden; background:#ECEFF3; break-after:page; page-break-after:always; box-sizing:border-box }
+.pg:last-child { break-after:auto; page-break-after:auto }
+</style></head><body>${pages}</body></html>`
+  return { html, imagens }
+}
+
 export async function gerarPDF({
   quantidadeCartelas, cartelajInicio = 1,
   premio, premioImageBase64, premioImagens, contato,
@@ -63,19 +87,37 @@ export async function gerarPDF({
 
     for (let li = 0; li < lotes.length; li++) {
       console.log(`  → Lote ${li + 1}/${lotes.length}`)
-      for (const { numero, rows } of lotes[li]) {
-        const page = await browser.newPage()
-        try {
-          const html = customTemplate
-            ? renderTemplate(customTemplate, { numero, rows, premio, premioImageBase64, premioImagens, contato, data, horario, local, valorCartela })
-            : gerarHTMLCartela({ numero, rows, premio, premioImageBase64, premioImagens, contato, data, horario, local, valorCartela })
-          await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 })
-          const pdfBuf = await page.pdf({ format: 'A4', printBackground: true, timeout: 60000 })
-          const doc = await PDFDocument.load(pdfBuf)
-          const [pg] = await mergedDoc.copyPages(doc, [0])
-          mergedDoc.addPage(pg)
-        } finally { await page.close() }
-      }
+      const htmls = lotes[li].map(({ numero, rows }) => customTemplate
+        ? renderTemplate(customTemplate, { numero, rows, premio, premioImageBase64, premioImagens, contato, data, horario, local, valorCartela })
+        : gerarHTMLCartela({ numero, rows, premio, premioImageBase64, premioImagens, contato, data, horario, local, valorCartela }))
+
+      // Um único PDF por lote: o Chromium deduplica imagens/fontes dentro do mesmo
+      // documento. Um PDF por cartela embutia a foto do prêmio 100x (~200 MB).
+      const page = await browser.newPage()
+      try {
+        const { html, imagens } = combinarHTMLs(htmls)
+        await page.setContent(html, { waitUntil: 'networkidle0', timeout: 120000 })
+        if (imagens.length) await page.evaluate(async (uris) => {
+          // reduz p/ o tamanho exibido (220x~365px, 2x) — fotos de celular têm vários MB
+          const reduzir = async u => {
+            const bmp = await createImageBitmap(await (await fetch(u)).blob())
+            const W = 440, H = 730, k = Math.max(W / bmp.width, H / bmp.height)
+            const c = Object.assign(document.createElement('canvas'), { width: W, height: H })
+            const g = c.getContext('2d')
+            g.drawImage(bmp, (W - bmp.width * k) / 2, (H - bmp.height * k) / 2, bmp.width * k, bmp.height * k)
+            return URL.createObjectURL(await new Promise(r => c.toBlob(r, 'image/jpeg', 0.85)))
+          }
+          const urls = await Promise.all(uris.map(reduzir))
+          await Promise.all([...document.querySelectorAll('img[data-img]')].map(img => new Promise(res => {
+            img.onload = img.onerror = res
+            img.src = urls[img.dataset.img]
+          })))
+        }, imagens)
+        const pdfBuf = await page.pdf({ width: '794px', height: '1123px', printBackground: true, timeout: 120000 })
+        const doc = await PDFDocument.load(pdfBuf)
+        const pgs = await mergedDoc.copyPages(doc, doc.getPageIndices())
+        pgs.forEach(p => mergedDoc.addPage(p))
+      } finally { await page.close() }
     }
     const finalPdf = await mergedDoc.save()
     console.log(`✅ ${(finalPdf.byteLength / 1024 / 1024).toFixed(1)} MB`)
